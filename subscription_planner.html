@@ -42,6 +42,10 @@ body{font-family:-apple-system,'Pretendard','Apple SD Gothic Neo',sans-serif;bac
 .select-row label{font-size:12px;color:var(--text-sub);display:block;margin-bottom:3px}
 .sel{width:100%;padding:5px 6px;border:.5px solid var(--border-strong);border-radius:var(--radius-sm);font-size:12px;background:var(--surface);color:var(--text);cursor:pointer}
 .sel:focus{outline:none;border-color:var(--accent)}
+/* 적용 버튼 */
+.apply-btn{width:100%;margin-bottom:10px;padding:10px;border:none;border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;background:var(--accent);color:#fff;box-shadow:var(--shadow);transition:background .15s}
+.apply-btn:hover{background:#154a8f}
+.apply-hint{font-size:11px;color:#b06000;background:var(--amber-bg);border:.5px solid var(--amber-border);border-radius:var(--radius-sm);padding:5px 8px;margin:-4px 0 10px;text-align:center}
 /* 탭 */
 .tabs{display:flex;border-bottom:1px solid var(--border-strong)}
 .tab-btn{padding:7px 12px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;color:var(--text-muted);border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s}
@@ -184,13 +188,13 @@ tbody td.c{text-align:center}
     <div class="card-head"><span style="font-size:14px">⚙️</span><h2>기본 조건</h2></div>
     <div class="card-body">
       <div class="setting-label">회사 지원금</div>
-      <div class="input-row"><label>월 지원 한도</label><input type="text" inputmode="numeric" class="money-input" id="limit" value="297,000" oninput="formatNumberInput(this)"><span class="input-unit">원</span></div>
+      <div class="input-row"><label>월 지원 한도</label><input type="text" inputmode="numeric" class="money-input" id="limit" value="297,000" oninput="formatNumberInput(this);markDirty()"><span class="input-unit">원</span></div>
       <div class="divider"></div>
       <div class="setting-label">단말 할부 조건</div>
-      <div class="input-row"><label>할부 원금</label><input type="text" inputmode="numeric" class="money-input" id="installPrincipal" value="" placeholder="0" oninput="formatNumberInput(this)"><span class="input-unit">원</span></div>
+      <div class="input-row"><label>할부 원금</label><input type="text" inputmode="numeric" class="money-input" id="installPrincipal" value="" placeholder="0" oninput="formatNumberInput(this);updateNextBuyOptions();markDirty()"><span class="input-unit">원</span></div>
       <div class="select-row" style="margin-bottom:0">
         <label style="font-size:12px;color:var(--text-sub)">할부 개월</label>
-        <select id="installMonths" class="sel" onchange="update()">
+        <select id="installMonths" class="sel" onchange="updateNextBuyOptions();markDirty()">
           <option value="6" selected>6개월</option>
           <option value="10">10개월</option>
           <option value="12">12개월</option>
@@ -202,18 +206,15 @@ tbody td.c{text-align:center}
       <div class="divider"></div>
       <div class="setting-label">스마트폰 구입 일정</div>
       <div class="select-row"><label>첫 구입일</label>
-        <input type="date" id="buyDate" class="sel" value="2026-08-01" onchange="updateNextBuyOptions();update()">
+        <input type="date" id="buyDate" class="sel" value="2026-08-01" onchange="updateNextBuyOptions();markDirty()">
       </div>
-      <div style="font-size:10px;color:var(--text-muted);margin-top:-3px;margin-bottom:6px;line-height:1.5">구입월에는 할부금을 일할 계산해 청구하고, 부족분은 할부 종료 다음 달에 추가로 청구합니다.</div>
-      <div class="input-row" style="margin-top:6px"><label>다음 구입 예정 월 (구입월+6 이후)</label></div>
-      <div class="select-row" style="margin-bottom:0">
-        <select id="nextBuyMonth" class="sel" onchange="update()">
-          <option value="auto" selected>자동 (할부 종료 다음달)</option>
-        </select>
-      </div>
-      <div id="next-buy-info" style="font-size:11px;color:var(--text-muted);margin-top:4px;line-height:1.5"></div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:-3px;line-height:1.5">구입월에는 할부금을 일할 계산해 청구하고, 부족분은 할부 종료 다음 달에 추가로 청구합니다. 다음 구입은 자동으로 할부 종료 다음 달(최소 구입월+6개월 경과 후)로 계산됩니다.</div>
+      <div id="next-buy-info" style="font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.5"></div>
     </div>
   </div>
+
+  <button id="apply-btn" class="apply-btn" onclick="update()">▶ 오른쪽 표에 반영</button>
+  <div id="apply-hint" class="apply-hint" style="display:none">입력값이 변경되었습니다 — 버튼을 눌러 표에 반영하세요</div>
 
   <div class="card" style="margin-bottom:10px">
     <div class="card-head"><span style="font-size:14px">📡</span><h2>휴대전화 요금</h2></div>
@@ -225,21 +226,21 @@ tbody td.c{text-align:center}
       </div>
       <button id="plan-detail-btn" class="plan-detail-btn" onclick="openPlanDetail()" disabled>요금제 상세보기</button>
       <div id="plan-selected-info" class="plan-selected-info" style="display:none"></div>
-      <div class="input-row" style="margin-top:8px"><label>월정액 (수정 가능)</label><input type="text" inputmode="numeric" class="money-input" id="baseFee" value="" placeholder="0" oninput="formatNumberInput(this);update()"><span class="input-unit">원</span></div>
+      <div class="input-row" style="margin-top:8px"><label>월정액 (수정 가능)</label><input type="text" inputmode="numeric" class="money-input" id="baseFee" value="" placeholder="0" oninput="formatNumberInput(this);refreshFeePreview()"><span class="input-unit">원</span></div>
       <div class="divider"></div>
       <div class="setting-label">할인</div>
       <div class="disc-row">
-        <input type="checkbox" id="discSuntaek" onchange="update()">
+        <input type="checkbox" id="discSuntaek" onchange="refreshFeePreview()">
         <label for="discSuntaek">선택약정할인 (25%)</label>
       </div>
       <div class="disc-row">
-        <input type="checkbox" id="discCombiChk" onchange="onDiscToggle('discCombi');update()">
+        <input type="checkbox" id="discCombiChk" onchange="onDiscToggle('discCombi');refreshFeePreview()">
         <label for="discCombiChk">결합할인</label>
-        <input type="number" id="discCombiPct" value="0" min="0" max="100" step="1" disabled oninput="update()">
+        <input type="number" id="discCombiPct" value="0" min="0" max="100" step="1" disabled oninput="refreshFeePreview()">
         <span class="input-unit">%</span>
       </div>
       <div class="disc-row">
-        <input type="checkbox" id="discWelfareChk" onchange="update()">
+        <input type="checkbox" id="discWelfareChk" onchange="refreshFeePreview()">
         <label for="discWelfareChk">복지할인 (결합할인 적용 후 금액의 35%)</label>
       </div>
       <div class="disc-result">
@@ -264,11 +265,11 @@ tbody td.c{text-align:center}
         <div id="tuju-combo-row">
           <div class="select-row" style="margin-bottom:6px">
             <label style="font-size:11px;color:var(--text-sub)">멤버십 등급 선택</label>
-            <select id="tujuOwnTier" class="sel" onchange="update()"></select>
+            <select id="tujuOwnTier" class="sel" onchange="refreshFeePreview()"></select>
           </div>
           <div class="select-row" style="margin-bottom:6px">
             <label style="font-size:11px;color:var(--text-sub)">추가 OTT 서비스 선택</label>
-            <select id="tujuAddon" class="sel" onchange="update()"></select>
+            <select id="tujuAddon" class="sel" onchange="refreshFeePreview()"></select>
           </div>
         </div>
         <div id="tuju-result" class="tuju-result"></div>
@@ -666,7 +667,7 @@ function selectPlan(id) {
   }
   closePlanList();
   renderPlanList();
-  update();
+  refreshFeePreview();
 }
 
 function openPlanDetail() {
@@ -694,6 +695,27 @@ function computeDiscountedFee(baseFee) {
   const welfareAmt = document.getElementById('discWelfareChk')?.checked ? afterCombi * 0.35 : 0;
   const fee = baseFee - suntaekAmt - combiAmt - welfareAmt;
   return Math.max(0, Math.round(fee));
+}
+
+// 왼쪽 패널 안에서만 즉시 반영되는 가벼운 미리보기(할인 후 기본요금, T우주 이용금액).
+// 오른쪽 타임라인 표(buildTimeline+renderTable)는 무겁기 때문에 '적용' 버튼을 눌러야만 반영된다.
+function refreshFeePreview() {
+  const baseFee = numVal('baseFee');
+  const discountedBaseFee = computeDiscountedFee(baseFee);
+  const feeDisplayEl = document.getElementById('discountedFeeDisplay');
+  if (feeDisplayEl) feeDisplayEl.textContent = fmtK(discountedBaseFee)+'원';
+  renderTujuResult();
+  markDirty();
+}
+
+// 표에 아직 반영되지 않은 변경사항이 있음을 표시
+function markDirty() {
+  const hint = document.getElementById('apply-hint');
+  if (hint) hint.style.display = 'block';
+}
+function clearDirty() {
+  const hint = document.getElementById('apply-hint');
+  if (hint) hint.style.display = 'none';
 }
 
 // ═══════════════════════════════════
@@ -805,7 +827,7 @@ function onTujuGroupChange() {
   const groupKey = document.getElementById('tujuGroup').value;
   const detail = document.getElementById('tuju-detail');
   const tierSel = document.getElementById('tujuTier');
-  if (groupKey === 'none') { detail.style.display = 'none'; update(); return; }
+  if (groupKey === 'none') { detail.style.display = 'none'; refreshFeePreview(); return; }
   detail.style.display = 'block';
   const group = TUJU_GROUPS[groupKey];
   tierSel.innerHTML = Object.entries(group.tiers).map(([key,t]) => `<option value="${key}">${t.label}</option>`).join('');
@@ -823,7 +845,7 @@ function onTujuTierChange() {
     applyTujuToPlan(groupKey, tierKey);
     syncingTuju = false;
   }
-  if (!tier) { update(); return; }
+  if (!tier) { refreshFeePreview(); return; }
   if (tier.hasAddon) {
     comboRow.style.display = 'block';
     const ownPrices = TUJU_OWN_PRICES[group.ownKey];
@@ -842,7 +864,7 @@ function onTujuTierChange() {
   } else {
     comboRow.style.display = 'none';
   }
-  update();
+  refreshFeePreview();
 }
 
 // 이용금액 계산: 합산 판매가에서 최대할인을 뺀 값(최소 1,000원/프로모션 0원), 89단계는 정률 50% 할인
@@ -909,7 +931,7 @@ let addonList = [{name:'', fee:''}]; // [{name, fee}]
 function addAddonRow(idx) {
   addonList.splice(idx+1, 0, {name:'', fee:''});
   renderAddonList();
-  update();
+  markDirty();
 }
 
 function removeAddonRow(idx) {
@@ -919,7 +941,7 @@ function removeAddonRow(idx) {
     addonList.splice(idx, 1);
   }
   renderAddonList();
-  update();
+  markDirty();
 }
 
 function renderAddonList() {
@@ -927,8 +949,8 @@ function renderAddonList() {
   if (!container) return;
   container.innerHTML = addonList.map((a, i) => `
     <div class="addon-row">
-      <input type="text" class="addon-name" value="${a.name}" placeholder="서비스명" oninput="addonList[${i}].name=this.value;update()">
-      <input type="text" inputmode="numeric" class="money-input" value="${a.fee ? Number(a.fee).toLocaleString('ko-KR') : ''}" placeholder="요금" oninput="addonList[${i}].fee=formatNumberInput(this);update()">
+      <input type="text" class="addon-name" value="${a.name}" placeholder="서비스명" oninput="addonList[${i}].name=this.value;markDirty()">
+      <input type="text" inputmode="numeric" class="money-input" value="${a.fee ? Number(a.fee).toLocaleString('ko-KR') : ''}" placeholder="요금" oninput="addonList[${i}].fee=formatNumberInput(this);markDirty()">
       <span style="font-size:10px;color:var(--text-muted);flex-shrink:0">원</span>
       <button class="addon-btn addon-add" onclick="addAddonRow(${i})" title="줄 추가">+</button>
       <button class="addon-btn addon-remove" onclick="removeAddonRow(${i})" title="줄 삭제">−</button>
@@ -946,7 +968,7 @@ function getBuyDateParts() {
   return { year: y || 2026, month: m || 8, day: d || 1 };
 }
 
-// ─── 다음 구입 월 드롭다운 업데이트 ───
+// ─── 할부 월 금액 / 다음 구입(자동) 안내 표시 ───
 function updateNextBuyOptions() {
   const { year: buyYear, month: buyMonth } = getBuyDateParts();
   const installMonths = parseInt(document.getElementById('installMonths').value) || 6;
@@ -958,25 +980,9 @@ function updateNextBuyOptions() {
   if (dispEl) dispEl.textContent = monthlyAmt > 0 ? `월 할부금: ${fmtK(monthlyAmt)}원` : '';
 
   // 재구입 최소 기한: 구입월 + 6개월 이후 (= 구입월 + 7번째 달부터 가능)
-  // 할부 기간과 무관하게 구입 후 최소 6개월은 지나야 함
+  // 다음 구입은 항상 자동(할부 종료 다음달)이며, 이 최소 기한보다 이르지 않도록 계산된다.
   const minNextOffset = 7; // 구입월 + 7번째 달 (= 6개월 경과 후 다음달)
 
-  const sel = document.getElementById('nextBuyMonth');
-  if (!sel) return;
-
-  const opts = ['<option value="auto">자동 (할부 종료 다음달)</option>'];
-  // 최소 재구입 달: 구입월+minNextOffset
-  // 최대: 구입월+24까지 선택 가능 (합리적 범위)
-  for (let offset = minNextOffset; offset <= 24; offset++) {
-    let m = buyMonth + offset, y = buyYear;
-    while (m > 12) { m -= 12; y++; }
-    if (y >= 2031) break;
-    const label = `${y}년 ${m}월 (구입 후 ${offset}개월)`;
-    opts.push(`<option value="${y*100+m}">${label}</option>`);
-  }
-  sel.innerHTML = opts.join('');
-
-  // 정보 표시
   const infoEl = document.getElementById('next-buy-info');
   if (infoEl) {
     let minM = buyMonth + minNextOffset, minY = buyYear;
@@ -997,9 +1003,8 @@ function getSettings() {
   const installMonths    = parseInt(document.getElementById('installMonths').value)    || 6;
   const installMonthly   = installPrincipal > 0 ? Math.round(installPrincipal / installMonths) : 0;
 
-  // 다음 구입 키: 'auto' 또는 YYYYMM 정수
-  const nextBuyVal = document.getElementById('nextBuyMonth')?.value;
-  const nextBuyKey = (!nextBuyVal || nextBuyVal === 'auto') ? 'auto' : parseInt(nextBuyVal);
+  // 다음 구입은 항상 자동(할부 종료 다음달, 최소 구입월+6개월 경과)
+  const nextBuyKey = 'auto';
 
   const baseFee = numVal('baseFee');
   const discountedBaseFee = computeDiscountedFee(baseFee);
@@ -1136,9 +1141,7 @@ function buildTimeline() {
   // ── 2. 청구요금 (할인 후 기본요금 + T우주 결합상품 + 부가서비스) ──
   const tujuFee = getTujuFee();
   const billFee = s.discountedBaseFee + tujuFee + s.addonFee;
-  const feeDisplayEl = document.getElementById('discountedFeeDisplay');
-  if (feeDisplayEl) feeDisplayEl.textContent = fmtK(s.discountedBaseFee)+'원';
-  renderTujuResult();
+  refreshFeePreview();
 
   // ── 3. 전체 날짜 목록 생성 ──
   const allKeys = [];
@@ -1386,7 +1389,6 @@ function collectSettings() {
     installPrincipal: document.getElementById('installPrincipal')?.value,
     installMonths:    document.getElementById('installMonths')?.value,
     buyDate:          document.getElementById('buyDate')?.value,
-    nextBuyMonth:     document.getElementById('nextBuyMonth')?.value,
   };
 }
 
@@ -1422,7 +1424,6 @@ function applySettings(cfg) {
   set('installMonths', cfg.installMonths);
   set('buyDate', cfg.buyDate);
   updateNextBuyOptions();
-  if (cfg.nextBuyMonth) set('nextBuyMonth', cfg.nextBuyMonth);
 }
 
 function saveToJson() {
@@ -1564,6 +1565,7 @@ function update() {
   try {
     const rows = buildTimeline();
     renderTable(rows);
+    clearDirty();
   } catch(e) { console.error('업데이트 오류:',e); }
 }
 
@@ -1582,11 +1584,6 @@ document.addEventListener('DOMContentLoaded',()=>{
   renderPlanList();
   updateNextBuyOptions();
   update();
-  ['limit','baseFee','installPrincipal'].forEach(id=>{
-    document.getElementById(id)?.addEventListener('input', ()=>{ updateNextBuyOptions(); update(); });
-  });
-  document.getElementById('installMonths')?.addEventListener('change', ()=>{ updateNextBuyOptions(); update(); });
-  document.getElementById('nextBuyMonth')?.addEventListener('change', update);
 });
 </script>
 </body>
