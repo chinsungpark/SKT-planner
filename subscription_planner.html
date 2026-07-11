@@ -34,17 +34,14 @@ body{font-family:-apple-system,'Pretendard','Apple SD Gothic Neo',sans-serif;bac
 .divider{height:.5px;background:var(--border);margin:9px 0}
 .input-row{display:flex;align-items:center;gap:5px;margin-bottom:5px}
 .input-row label{font-size:12px;color:var(--text-sub);flex:1;min-width:0}
-.input-row input[type="number"]{width:95px;padding:4px 6px;border:.5px solid var(--border-strong);border-radius:var(--radius-sm);font-size:12px;text-align:right;background:var(--surface);color:var(--text);flex-shrink:0}
 .input-unit{font-size:11px;color:var(--text-muted);flex-shrink:0}
+/* 금액 입력칸 — 우측 정렬, 표의 청구요금 셀과 동일한 글자 크기(11.5px) */
+.money-input{padding:4px 6px;border:.5px solid var(--border-strong);border-radius:var(--radius-sm);font-size:11.5px;text-align:right;background:var(--surface);color:var(--text);font-variant-numeric:tabular-nums;min-width:0}
+.input-row .money-input{width:95px;flex-shrink:0}
 .select-row{margin-bottom:6px}
 .select-row label{font-size:12px;color:var(--text-sub);display:block;margin-bottom:3px}
 .sel{width:100%;padding:5px 6px;border:.5px solid var(--border-strong);border-radius:var(--radius-sm);font-size:12px;background:var(--surface);color:var(--text);cursor:pointer}
 .sel:focus{outline:none;border-color:var(--accent)}
-.summary-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-.stat-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:10px 12px}
-.stat-label{font-size:11px;color:var(--text-muted);margin-bottom:3px}
-.stat-value{font-size:19px;font-weight:700;letter-spacing:-.5px}
-.stat-value.green{color:var(--green)} .stat-value.amber{color:#b06000} .stat-value.red{color:var(--red)}
 /* 탭 */
 .tabs{display:flex;border-bottom:1px solid var(--border-strong)}
 .tab-btn{padding:7px 12px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;color:var(--text-muted);border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s}
@@ -131,9 +128,12 @@ tbody td.c{text-align:center}
 .f-btn{padding:3px 8px;font-size:11px;border:.5px solid var(--border-strong);border-radius:var(--radius-sm);cursor:pointer;background:var(--surface);color:var(--text-sub)}
 .f-btn.on{background:var(--fill-accent,var(--accent));color:#fff;border-color:var(--accent)}
 .skt-sort-btn{padding:3px 8px;font-size:11px;border:.5px solid var(--border-strong);border-radius:var(--radius-sm);cursor:pointer;background:var(--surface);color:var(--text-sub)}
-/* 요금제 리스트 */
-.plan-filter{width:100%;padding:5px 6px;border:.5px solid var(--border-strong);border-radius:var(--radius-sm);font-size:12px;background:var(--surface);color:var(--text);margin-bottom:5px}
-.plan-list{max-height:300px;overflow-y:auto;border:.5px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface)}
+/* 요금제 리스트 (드롭다운 콤보박스) */
+.plan-combo{position:relative}
+.plan-filter{width:100%;padding:5px 6px;border:.5px solid var(--border-strong);border-radius:var(--radius-sm);font-size:12px;background:var(--surface);color:var(--text);margin-bottom:0}
+.plan-filter:focus{outline:none;border-color:var(--accent)}
+.plan-list{display:none;position:absolute;top:calc(100% + 3px);left:0;right:0;z-index:30;max-height:300px;overflow-y:auto;border:.5px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface);box-shadow:var(--shadow)}
+.plan-list.open{display:block}
 .plan-item{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:5px 8px;font-size:11.5px;cursor:pointer;border-bottom:.5px solid var(--border)}
 .plan-item:last-child{border-bottom:none}
 .plan-item:hover{background:var(--surface2)}
@@ -156,11 +156,16 @@ tbody td.c{text-align:center}
 .disc-result .value{font-size:15px;font-weight:700;color:var(--green)}
 /* 부가서비스 라인 */
 .addon-row{display:flex;gap:4px;align-items:center;margin-bottom:5px}
-.addon-row input[type="text"]{flex:1.2;padding:3px 5px;border:.5px solid var(--border-strong);border-radius:4px;font-size:11px;background:var(--surface);color:var(--text)}
-.addon-row input[type="number"]{flex:1;padding:3px 5px;border:.5px solid var(--border-strong);border-radius:4px;font-size:11px;text-align:right;background:var(--surface);color:var(--text)}
+.addon-row .addon-name{flex:1.2;min-width:0;padding:3px 5px;border:.5px solid var(--border-strong);border-radius:4px;font-size:11px;background:var(--surface);color:var(--text)}
+.addon-row .money-input{flex:1;width:auto;padding:3px 5px;border-radius:4px}
 .addon-row .addon-btn{flex-shrink:0;width:22px;height:22px;line-height:20px;padding:0;font-size:13px;font-weight:600;border:.5px solid var(--border-strong);border-radius:3px;cursor:pointer;background:var(--surface);color:var(--text-sub)}
 .addon-row .addon-add{color:var(--accent);border-color:var(--accent-border)}
 .addon-row .addon-remove{color:var(--red);border-color:var(--red-border)}
+/* T우주 결합상품 */
+.tuju-result{background:var(--accent-bg);border:.5px solid var(--accent-border);border-radius:var(--radius-sm);padding:7px 9px;margin-top:6px;font-size:11px;color:#1a3a6a;line-height:1.7}
+.tuju-result .row{display:flex;justify-content:space-between}
+.tuju-result .final{font-size:15px;font-weight:700;color:var(--accent)}
+.tuju-result .muted{color:var(--text-muted);text-decoration:line-through}
 @media print{.settings-panel,.tabs,.export-btn{display:none!important}.layout{grid-template-columns:1fr}}
 </style>
 </head>
@@ -179,14 +184,15 @@ tbody td.c{text-align:center}
     <div class="card-head"><span style="font-size:14px">⚙️</span><h2>기본 조건</h2></div>
     <div class="card-body">
       <div class="setting-label">회사 지원금</div>
-      <div class="input-row"><label>월 지원 한도</label><input type="number" id="limit" value="297000" step="1000"><span class="input-unit">원</span></div>
+      <div class="input-row"><label>월 지원 한도</label><input type="text" inputmode="numeric" class="money-input" id="limit" value="297,000" oninput="formatNumberInput(this)"><span class="input-unit">원</span></div>
       <div class="divider"></div>
       <div class="setting-label">단말 할부 조건</div>
-      <div class="input-row"><label>할부 원금</label><input type="number" id="installPrincipal" value="" placeholder="0" step="10000"><span class="input-unit">원</span></div>
+      <div class="input-row"><label>할부 원금</label><input type="text" inputmode="numeric" class="money-input" id="installPrincipal" value="" placeholder="0" oninput="formatNumberInput(this)"><span class="input-unit">원</span></div>
       <div class="select-row" style="margin-bottom:0">
         <label style="font-size:12px;color:var(--text-sub)">할부 개월</label>
         <select id="installMonths" class="sel" onchange="update()">
           <option value="6" selected>6개월</option>
+          <option value="10">10개월</option>
           <option value="12">12개월</option>
           <option value="18">18개월</option>
           <option value="24">24개월</option>
@@ -195,16 +201,10 @@ tbody td.c{text-align:center}
       <div id="installMonthlyDisplay" style="font-size:11px;color:var(--text-muted);margin-top:5px;text-align:right"></div>
       <div class="divider"></div>
       <div class="setting-label">스마트폰 구입 일정</div>
-      <div class="select-row"><label>첫 구입 연도</label>
-        <select id="buyYear" class="sel" onchange="update()"><option value="2026" selected>2026년</option><option value="2027">2027년</option><option value="2028">2028년</option></select>
+      <div class="select-row"><label>첫 구입일</label>
+        <input type="date" id="buyDate" class="sel" value="2026-08-01" onchange="updateNextBuyOptions();update()">
       </div>
-      <div class="select-row"><label>첫 구입 월</label>
-        <select id="buyMonth" class="sel" onchange="update()">
-          <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option><option value="4">4월</option>
-          <option value="5">5월</option><option value="6">6월</option><option value="7">7월</option><option value="8" selected>8월</option>
-          <option value="9">9월</option><option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
-        </select>
-      </div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:-3px;margin-bottom:6px;line-height:1.5">구입월에는 할부금을 일할 계산해 청구하고, 부족분은 할부 종료 다음 달에 추가로 청구합니다.</div>
       <div class="input-row" style="margin-top:6px"><label>다음 구입 예정 월 (구입월+6 이후)</label></div>
       <div class="select-row" style="margin-bottom:0">
         <select id="nextBuyMonth" class="sel" onchange="update()">
@@ -219,11 +219,13 @@ tbody td.c{text-align:center}
     <div class="card-head"><span style="font-size:14px">📡</span><h2>휴대전화 요금</h2></div>
     <div class="card-body">
       <div class="setting-label">기본 요금제</div>
-      <input type="text" id="plan-filter" class="plan-filter" placeholder="요금제 검색..." oninput="renderPlanList()">
-      <div id="plan-list" class="plan-list"></div>
+      <div class="plan-combo" id="plan-combo">
+        <input type="text" id="plan-filter" class="plan-filter" placeholder="요금제를 검색하거나 선택하세요" autocomplete="off" oninput="onPlanFilterInput()" onfocus="openPlanList()">
+        <div id="plan-list" class="plan-list"></div>
+      </div>
       <button id="plan-detail-btn" class="plan-detail-btn" onclick="openPlanDetail()" disabled>요금제 상세보기</button>
       <div id="plan-selected-info" class="plan-selected-info" style="display:none"></div>
-      <div class="input-row" style="margin-top:8px"><label>월정액 (수정 가능)</label><input type="number" id="baseFee" value="" placeholder="0" step="1000" oninput="update()"><span class="input-unit">원</span></div>
+      <div class="input-row" style="margin-top:8px"><label>월정액 (수정 가능)</label><input type="text" inputmode="numeric" class="money-input" id="baseFee" value="" placeholder="0" oninput="formatNumberInput(this);update()"><span class="input-unit">원</span></div>
       <div class="divider"></div>
       <div class="setting-label">할인</div>
       <div class="disc-row">
@@ -237,14 +239,39 @@ tbody td.c{text-align:center}
         <span class="input-unit">%</span>
       </div>
       <div class="disc-row">
-        <input type="checkbox" id="discWelfareChk" onchange="onDiscToggle('discWelfare');update()">
-        <label for="discWelfareChk">복지할인</label>
-        <input type="number" id="discWelfarePct" value="0" min="0" max="100" step="1" disabled oninput="update()">
-        <span class="input-unit">%</span>
+        <input type="checkbox" id="discWelfareChk" onchange="update()">
+        <label for="discWelfareChk">복지할인 (결합할인 적용 후 금액의 35%)</label>
       </div>
       <div class="disc-result">
         <span class="label">월 기본요금 (할인 후)</span>
         <span class="value" id="discountedFeeDisplay">0원</span>
+      </div>
+      <div class="divider"></div>
+      <div class="setting-label">T 우주 결합 상품</div>
+      <div class="select-row" style="margin-bottom:6px">
+        <select id="tujuGroup" class="sel" onchange="onTujuGroupChange()">
+          <option value="none">사용 안 함</option>
+          <option value="ai">AI (Google AI)</option>
+          <option value="netflix">넷플릭스</option>
+          <option value="disney">디즈니+</option>
+          <option value="tvingwavve">티빙&amp;웨이브</option>
+        </select>
+      </div>
+      <div id="tuju-detail" style="display:none">
+        <div class="select-row" style="margin-bottom:6px">
+          <select id="tujuTier" class="sel" onchange="onTujuTierChange()"></select>
+        </div>
+        <div id="tuju-combo-row">
+          <div class="select-row" style="margin-bottom:6px">
+            <label style="font-size:11px;color:var(--text-sub)">멤버십 등급 선택</label>
+            <select id="tujuOwnTier" class="sel" onchange="update()"></select>
+          </div>
+          <div class="select-row" style="margin-bottom:6px">
+            <label style="font-size:11px;color:var(--text-sub)">추가 OTT 서비스 선택</label>
+            <select id="tujuAddon" class="sel" onchange="update()"></select>
+          </div>
+        </div>
+        <div id="tuju-result" class="tuju-result"></div>
       </div>
       <div class="divider"></div>
       <div class="setting-label">부가서비스</div>
@@ -252,43 +279,10 @@ tbody td.c{text-align:center}
     </div>
   </div>
 
-  <div class="card" style="margin-bottom:10px">
-    <div class="card-head"><span style="font-size:14px">🔵</span><h2>Google One 연간 시작 시점</h2></div>
-    <div class="card-body">
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;line-height:1.5">
-        Google One 요금제는 구독 1/2/3에서 선택합니다.<br>아래에서 연간 결제 브릿지 로직 시작 월만 설정합니다.
-      </div>
-      <div class="select-row" style="margin-bottom:0">
-        <label style="font-size:12px;color:var(--text-sub)">구독 서비스 연간 첫 결제 시작</label>
-        <select id="googleStartMonth" class="sel" onchange="update()">
-          <option value="6">6월 (할부 직전달)</option>
-          <option value="7" selected>7월 (할부 시작 전달)</option>
-          <option value="8">8월 (단말 구입과 동월)</option>
-        </select>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-head"><span style="font-size:14px">➕</span><h2>기타 추가 구독 (브릿지 설정)</h2></div>
-    <div class="card-body" style="padding-bottom:6px">
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;line-height:1.5">
-        구독 1/2/3에서 선택한 서비스의 <strong>브릿지 구간</strong> 처리 방식을 설정합니다.
-      </div>
-      <div id="services-list"></div>
-    </div>
-  </div>
-
 </div><!-- /settings-panel -->
 
 <!-- ─── 오른쪽 결과 ─── -->
 <div>
-  <div class="summary-row">
-    <div class="stat-card"><div class="stat-label">구독료 총 지출 (4년간)</div><div class="stat-value amber" id="totalCost">—</div></div>
-    <div class="stat-card"><div class="stat-label">월간만 결제 대비 절약</div><div class="stat-value green" id="savings">—</div></div>
-    <div class="stat-card"><div class="stat-label">한도 초과 달 수</div><div class="stat-value" id="overCount">—</div></div>
-  </div>
-
   <div class="card">
     <div class="tabs">
       <button class="tab-btn active" onclick="switchTab('timeline',this)">📅 월별 계획표</button>
@@ -448,21 +442,20 @@ function googleUpgradeOptions(currentSvcId) {
   return GOOGLE_ORDER.slice(idx+1).map(id => svcById(id)).filter(Boolean);
 }
 
-// ── 브릿지 설정 (왼쪽 패널용) — 미사용으로 간소화 ──
-const bridgeState = {};
-SVC_CATALOG.forEach(s => { bridgeState[s.id] = 'pause'; });
-
 function svcById(id) { return SVC_CATALOG.find(s => s.id === id); }
 function fmt(n)  { return Math.abs(Math.round(n)).toLocaleString('ko-KR'); }
 function fmtK(n) { return Math.round(n).toLocaleString('ko-KR'); }
 
-// ═══════════════════════════════════
-// 왼쪽 패널: 안내 표시
-// ═══════════════════════════════════
-function renderServicesList() {
-  const container = document.getElementById('services-list');
-  if (!container) return;
-  container.innerHTML = '<div style="font-size:11px;color:var(--text-muted);line-height:1.6">구독 1/2/3은 월별 계획표의 각 셀에서 직접 선택합니다.<br>연간 구독은 해당 달에만 결제되고, 이후 11개월은 유효기간으로 표시됩니다.<br>유효기간 종료 후 다음 달에 새 서비스를 선택할 수 있습니다.</div>';
+// ─── 1,000 단위 콤마 입력 처리 ───
+// 숫자 입력칸(type=text)에 콤마를 자동으로 표시하고, 실제 값은 숫자만 추출해서 사용
+function formatNumberInput(el) {
+  const raw = el.value.replace(/[^0-9]/g, '');
+  el.value = raw ? Number(raw).toLocaleString('ko-KR') : '';
+  return raw;
+}
+function numVal(id) {
+  const el = document.getElementById(id);
+  return el ? (parseInt((el.value || '').replace(/[^0-9]/g, '')) || 0) : 0;
 }
 
 // ═══════════════════════════════════
@@ -609,10 +602,30 @@ let selectedPlanId = '';
 
 function planById(id) { return SKT_PLANS.find(p => p.id === id); }
 
+function openPlanList() {
+  document.getElementById('plan-list')?.classList.add('open');
+  renderPlanList();
+}
+function closePlanList() {
+  document.getElementById('plan-list')?.classList.remove('open');
+}
+function onPlanFilterInput() {
+  openPlanList();
+}
+
+document.addEventListener('click', (e) => {
+  const combo = document.getElementById('plan-combo');
+  if (combo && !combo.contains(e.target)) closePlanList();
+});
+
 function renderPlanList() {
   const listEl = document.getElementById('plan-list');
   if (!listEl) return;
-  const q = (document.getElementById('plan-filter')?.value || '').trim().toLowerCase();
+  const filterEl = document.getElementById('plan-filter');
+  const selectedName = planById(selectedPlanId)?.name || '';
+  const typed = (filterEl?.value || '').trim();
+  // 선택된 요금제명을 그대로 보여주는 중이면(검색을 시작하지 않았다면) 전체 목록을 보여줌
+  const q = (typed && typed !== selectedName) ? typed.toLowerCase() : '';
   const items = q ? SKT_PLANS.filter(p => p.name.toLowerCase().includes(q)) : SKT_PLANS;
   if (!items.length) {
     listEl.innerHTML = '<div class="plan-empty">검색 결과가 없습니다</div>';
@@ -642,8 +655,16 @@ function selectPlan(id) {
   const p = planById(id);
   if (p) {
     const feeEl = document.getElementById('baseFee');
-    if (feeEl) feeEl.value = p.fee;
+    if (feeEl) feeEl.value = p.fee.toLocaleString('ko-KR');
+    const filterEl = document.getElementById('plan-filter');
+    if (filterEl) filterEl.value = p.name;
+    if (!syncingTuju) {
+      syncingTuju = true;
+      applyPlanToTuju(p.name);
+      syncingTuju = false;
+    }
   }
+  closePlanList();
   renderPlanList();
   update();
 }
@@ -662,18 +683,224 @@ function onDiscToggle(prefix) {
   if (pct) pct.disabled = !chk.checked;
 }
 
+// 선택약정할인: 기본료의 25% 할인
+// 결합할인: 기본료에서 입력한 %만큼 할인
+// 복지할인: (기본료 - 결합할인 금액)의 35% 고정 할인
 function computeDiscountedFee(baseFee) {
-  let fee = baseFee;
-  if (document.getElementById('discSuntaek')?.checked) fee *= (1 - 0.25);
-  if (document.getElementById('discCombiChk')?.checked) {
-    const pct = parseFloat(document.getElementById('discCombiPct')?.value) || 0;
-    fee *= (1 - pct/100);
-  }
-  if (document.getElementById('discWelfareChk')?.checked) {
-    const pct = parseFloat(document.getElementById('discWelfarePct')?.value) || 0;
-    fee *= (1 - pct/100);
-  }
+  const suntaekAmt = document.getElementById('discSuntaek')?.checked ? baseFee * 0.25 : 0;
+  const combiPct = parseFloat(document.getElementById('discCombiPct')?.value) || 0;
+  const combiAmt = document.getElementById('discCombiChk')?.checked ? baseFee * (combiPct/100) : 0;
+  const afterCombi = baseFee - combiAmt;
+  const welfareAmt = document.getElementById('discWelfareChk')?.checked ? afterCombi * 0.35 : 0;
+  const fee = baseFee - suntaekAmt - combiAmt - welfareAmt;
   return Math.max(0, Math.round(fee));
+}
+
+// ═══════════════════════════════════
+// T 우주 결합 상품 (SKT 요금제 상세 자료 기준)
+// ═══════════════════════════════════
+// 추가 OTT 선택지 등급별 가격표 ("선택 가능한 OTT 서비스" 표)
+const OTT_TIER_PRICES = {
+  youtube: { tier1:{name:'유튜브 프리미엄',price:14900}, tier2:{name:'유튜브 프리미엄 라이트',price:7900}, tier3:null },
+  netflix: { tier1:{name:'넷플릭스 프리미엄',price:17000}, tier2:{name:'넷플릭스 스탠다드',price:13500}, tier3:{name:'넷플릭스 광고형',price:7000} },
+  disney:  { tier1:{name:'디즈니+ 프리미엄',price:13900}, tier2:{name:'디즈니+ 스탠다드',price:9900}, tier3:null },
+  tving:   { tier1:{name:'티빙 프리미엄',price:16000}, tier2:{name:'티빙 스탠다드',price:12500}, tier3:{name:'티빙 광고형',price:4500} },
+  wavve:   { tier1:{name:'웨이브 콘텐츠팩 프리미엄',price:13900}, tier2:{name:'웨이브 콘텐츠팩 플러스',price:10900}, tier3:{name:'웨이브 콘텐츠팩',price:7900} },
+};
+
+// 그룹별 "멤버십(자사 서비스)" 가격표 — AI/넷플릭스/디즈니+는 위 OTT_TIER_PRICES 재사용,
+// 티빙&웨이브는 결합상품 전용 가격 체계(프리미엄/스탠다드/광고형)를 별도로 가짐
+const TUJU_OWN_PRICES = {
+  ai:      { tier1:{name:'구글AI Pro',price:26900}, tier2:{name:'구글AI Plus(2TB)',price:10900}, tier3:{name:'구글AI Plus(400GB)',price:6900} },
+  netflix: OTT_TIER_PRICES.netflix,
+  disney:  OTT_TIER_PRICES.disney,
+  tvingwavve: { tier1:{name:'티빙&웨이브 프리미엄',price:17900}, tier2:{name:'티빙&웨이브 스탠다드',price:13900}, tier3:{name:'티빙&웨이브 광고형',price:6500} },
+};
+
+// 그룹 정의: 요금제 등급별 최대할인(일반/프로모션 ~26.12.31), 109/99/89는 멤버십 고정(추가 OTT 없음)
+const TUJU_GROUPS = {
+  ai: {
+    label:'AI(Google AI)', ownKey:'ai', addonCategories:['youtube','netflix','disney','tving','wavve'],
+    tiers: {
+      max:{ label:'베스트 Max(Google AI)', planName:'베스트 Max(Google AI)', capNormal:34000, capPromo:35000, hasAddon:true },
+      pro:{ label:'베스트 Pro(Google AI)',  planName:'베스트 Pro(Google AI)', capNormal:21000, capPromo:22000, hasAddon:true },
+    }
+  },
+  netflix: {
+    label:'넷플릭스', ownKey:'netflix', addonCategories:['youtube','disney','tving','wavve'],
+    tiers: {
+      max:{ label:'베스트 Max(넷플릭스)', planName:'베스트 Max(넷플릭스)', capNormal:25000, capPromo:26000, hasAddon:true },
+      pro:{ label:'베스트 Pro(넷플릭스)',  planName:'베스트 Pro(넷플릭스)',  capNormal:21000, capPromo:22000, hasAddon:true },
+      p109:{ label:'베스트 109(넷플릭스) — 넷플릭스 스탠다드 고정', planName:'베스트 109(넷플릭스)', capNormal:12500, capPromo:13500, hasAddon:false, fixedTier:'tier2' },
+      p99:{ label:'베스트 99(넷플릭스) — 넷플릭스 광고형 고정',    planName:'베스트 99(넷플릭스)',  capNormal:6000,  capPromo:7000,  hasAddon:false, fixedTier:'tier3' },
+      p89:{ label:'베스트 89(넷플릭스) — 넷플릭스 광고형 고정 (50% 할인, 프로모션 대상 아님)', planName:'베스트 89(넷플릭스)', percent:0.5, hasAddon:false, fixedTier:'tier3', noPromo:true },
+    }
+  },
+  disney: {
+    label:'디즈니+', ownKey:'disney', addonCategories:['youtube','netflix','tving','wavve'],
+    tiers: {
+      max:{ label:'베스트 Max(디즈니+)', planName:'베스트 Max(디즈니+)', capNormal:25000, capPromo:26000, hasAddon:true },
+      pro:{ label:'베스트 Pro(디즈니+)',  planName:'베스트 Pro(디즈니+)',  capNormal:21000, capPromo:22000, hasAddon:true },
+      p109:{ label:'베스트 109(디즈니+) — 디즈니+ 프리미엄 고정', planName:'베스트 109(디즈니+)', capNormal:12900, capPromo:13900, hasAddon:false, fixedTier:'tier1' },
+      p99:{ label:'베스트 99(디즈니+) — 디즈니+ 스탠다드 고정',   planName:'베스트 99(디즈니+)',  capNormal:8900,  capPromo:9900,  hasAddon:false, fixedTier:'tier2' },
+      p89:{ label:'베스트 89(디즈니+) — 디즈니+ 스탠다드 고정 (50% 할인, 프로모션 대상 아님)', planName:'베스트 89(디즈니+)', percent:0.5, hasAddon:false, fixedTier:'tier2', noPromo:true },
+    }
+  },
+  tvingwavve: {
+    label:'티빙&웨이브', ownKey:'tvingwavve', addonCategories:['youtube','disney','netflix'],
+    tiers: {
+      max:{ label:'베스트 Max(티빙&웨이브)', planName:'베스트 Max(티빙&웨이브)', capNormal:25000, capPromo:26000, hasAddon:true },
+      pro:{ label:'베스트 Pro(티빙&웨이브)',  planName:'베스트 Pro(티빙&웨이브)',  capNormal:21000, capPromo:22000, hasAddon:true },
+      p109:{ label:'베스트 109(티빙&웨이브) — 티빙&웨이브 스탠다드 고정', planName:'베스트 109(티빙&웨이브)', capNormal:12900, capPromo:13900, hasAddon:false, fixedTier:'tier2' },
+      p99:{ label:'베스트 99(티빙&웨이브) — 티빙&웨이브 광고형 고정',    planName:'베스트 99(티빙&웨이브)',  capNormal:5500,  capPromo:6500,  hasAddon:false, fixedTier:'tier3' },
+      p89:{ label:'베스트 89(티빙&웨이브) — 티빙&웨이브 광고형 고정 (50% 할인, 프로모션 대상 아님)', planName:'베스트 89(티빙&웨이브)', percent:0.5, hasAddon:false, fixedTier:'tier3', noPromo:true },
+    }
+  },
+};
+
+const PROMO_DEADLINE = new Date('2026-12-31T23:59:59+09:00');
+
+// ── 기본 요금제 ↔ T우주 결합상품 양방향 연동 ──
+// 요금제명에 T우주 그룹의 실제 요금제(planName)가 일치하면 서로 자동으로 반영한다.
+// syncingTuju 플래그로 두 방향 동기화가 서로를 무한히 되부르지 않도록 막는다.
+let syncingTuju = false;
+
+function planByName(name) { return SKT_PLANS.find(p => p.name === name); }
+
+function tujuKeyForPlanName(name) {
+  for (const groupKey of Object.keys(TUJU_GROUPS)) {
+    const group = TUJU_GROUPS[groupKey];
+    for (const tierKey of Object.keys(group.tiers)) {
+      if (group.tiers[tierKey].planName === name) return { groupKey, tierKey };
+    }
+  }
+  return null;
+}
+
+// 기본 요금제 선택 → 일치하는 T우주 그룹/등급 자동 선택
+function applyPlanToTuju(name) {
+  const match = tujuKeyForPlanName(name);
+  if (!match) return; // 대응하는 T우주 결합상품이 없으면 기존 선택 유지
+  document.getElementById('tujuGroup').value = match.groupKey;
+  onTujuGroupChange();
+  document.getElementById('tujuTier').value = match.tierKey;
+  onTujuTierChange();
+}
+
+// T우주 그룹/등급 선택 → 대응하는 기본 요금제 자동 선택
+function applyTujuToPlan(groupKey, tierKey) {
+  if (groupKey === 'none') return;
+  const tier = TUJU_GROUPS[groupKey]?.tiers[tierKey];
+  const plan = tier ? planByName(tier.planName) : null;
+  if (!plan) return;
+  selectedPlanId = plan.id;
+  const feeEl = document.getElementById('baseFee');
+  if (feeEl) feeEl.value = plan.fee.toLocaleString('ko-KR');
+  const filterEl = document.getElementById('plan-filter');
+  if (filterEl) filterEl.value = plan.name;
+  renderPlanList();
+}
+
+function onTujuGroupChange() {
+  const groupKey = document.getElementById('tujuGroup').value;
+  const detail = document.getElementById('tuju-detail');
+  const tierSel = document.getElementById('tujuTier');
+  if (groupKey === 'none') { detail.style.display = 'none'; update(); return; }
+  detail.style.display = 'block';
+  const group = TUJU_GROUPS[groupKey];
+  tierSel.innerHTML = Object.entries(group.tiers).map(([key,t]) => `<option value="${key}">${t.label}</option>`).join('');
+  onTujuTierChange();
+}
+
+function onTujuTierChange() {
+  const groupKey = document.getElementById('tujuGroup').value;
+  const group = TUJU_GROUPS[groupKey];
+  const tierKey = document.getElementById('tujuTier').value;
+  const tier = group?.tiers[tierKey];
+  const comboRow = document.getElementById('tuju-combo-row');
+  if (!syncingTuju) {
+    syncingTuju = true;
+    applyTujuToPlan(groupKey, tierKey);
+    syncingTuju = false;
+  }
+  if (!tier) { update(); return; }
+  if (tier.hasAddon) {
+    comboRow.style.display = 'block';
+    const ownPrices = TUJU_OWN_PRICES[group.ownKey];
+    const ownSel = document.getElementById('tujuOwnTier');
+    ownSel.innerHTML = ['tier1','tier2','tier3'].filter(tk=>ownPrices[tk])
+      .map(tk => `<option value="${tk}">${ownPrices[tk].name} — ${fmtK(ownPrices[tk].price)}원</option>`).join('');
+    const addonSel = document.getElementById('tujuAddon');
+    let addonOpts = '';
+    group.addonCategories.forEach(cat => {
+      ['tier1','tier2','tier3'].forEach(tk => {
+        const item = OTT_TIER_PRICES[cat][tk];
+        if (item) addonOpts += `<option value="${cat}|${tk}">${item.name} — ${fmtK(item.price)}원</option>`;
+      });
+    });
+    addonSel.innerHTML = addonOpts;
+  } else {
+    comboRow.style.display = 'none';
+  }
+  update();
+}
+
+// 이용금액 계산: 합산 판매가에서 최대할인을 뺀 값(최소 1,000원/프로모션 0원), 89단계는 정률 50% 할인
+function computeTujuUsage() {
+  const groupKey = document.getElementById('tujuGroup')?.value;
+  if (!groupKey || groupKey === 'none') return null;
+  const group = TUJU_GROUPS[groupKey];
+  const tierKey = document.getElementById('tujuTier')?.value;
+  const tier = group?.tiers[tierKey];
+  if (!tier) return null;
+  const isPromoPeriod = new Date() <= PROMO_DEADLINE;
+  const ownPrices = TUJU_OWN_PRICES[group.ownKey];
+
+  let ownItem, addonItem = null;
+  if (tier.hasAddon) {
+    const ownTierKey = document.getElementById('tujuOwnTier')?.value || 'tier1';
+    ownItem = ownPrices[ownTierKey];
+    const addonVal = document.getElementById('tujuAddon')?.value || '';
+    const [addonCat, addonTierKey] = addonVal.split('|');
+    if (addonCat && OTT_TIER_PRICES[addonCat]) addonItem = OTT_TIER_PRICES[addonCat][addonTierKey];
+  } else {
+    ownItem = ownPrices[tier.fixedTier];
+  }
+  const listTotal = (ownItem?.price || 0) + (addonItem?.price || 0);
+
+  if (tier.percent != null) {
+    const usage = Math.round(listTotal * (1 - tier.percent));
+    return { listTotal, usageNormal: usage, usagePromo: null, noPromo: true, isPromoPeriod, ownItem, addonItem, group, tier };
+  }
+  const usageNormal = Math.max(listTotal - tier.capNormal, 1000);
+  const usagePromo  = Math.max(listTotal - tier.capPromo, 0);
+  return { listTotal, usageNormal, usagePromo, noPromo:false, isPromoPeriod, ownItem, addonItem, group, tier };
+}
+
+function getTujuFee() {
+  const r = computeTujuUsage();
+  if (!r) return 0;
+  return r.noPromo ? r.usageNormal : (r.isPromoPeriod ? r.usagePromo : r.usageNormal);
+}
+
+function renderTujuResult() {
+  const el = document.getElementById('tuju-result');
+  if (!el) return;
+  const r = computeTujuUsage();
+  if (!r) { el.innerHTML = ''; return; }
+  const comboText = r.addonItem ? `${r.ownItem?.name || ''} + ${r.addonItem.name}` : (r.ownItem?.name || '');
+  if (r.noPromo) {
+    el.innerHTML = `
+      <div class="row"><span>구성</span><span>${comboText}</span></div>
+      <div class="row"><span>정가 합계</span><span>${fmtK(r.listTotal)}원</span></div>
+      <div class="row"><span>이용금액 (50% 할인, 프로모션 대상 아님)</span><span class="final">${fmtK(r.usageNormal)}원</span></div>`;
+  } else {
+    el.innerHTML = `
+      <div class="row"><span>구성</span><span>${comboText}</span></div>
+      <div class="row"><span>정가 합계</span><span>${fmtK(r.listTotal)}원</span></div>
+      <div class="row"><span>일반 이용금액</span><span class="${r.isPromoPeriod?'muted':''}">${fmtK(r.usageNormal)}원</span></div>
+      <div class="row"><span>프로모션 이용금액 (~26.12.31 가입)</span><span class="final">${fmtK(r.usagePromo)}원</span></div>`;
+  }
 }
 
 // ─── 부가서비스 동적 관리 ───
@@ -700,8 +927,8 @@ function renderAddonList() {
   if (!container) return;
   container.innerHTML = addonList.map((a, i) => `
     <div class="addon-row">
-      <input type="text" value="${a.name}" placeholder="서비스명" oninput="addonList[${i}].name=this.value;update()">
-      <input type="number" value="${a.fee}" placeholder="요금" oninput="addonList[${i}].fee=this.value;update()">
+      <input type="text" class="addon-name" value="${a.name}" placeholder="서비스명" oninput="addonList[${i}].name=this.value;update()">
+      <input type="text" inputmode="numeric" class="money-input" value="${a.fee ? Number(a.fee).toLocaleString('ko-KR') : ''}" placeholder="요금" oninput="addonList[${i}].fee=formatNumberInput(this);update()">
       <span style="font-size:10px;color:var(--text-muted);flex-shrink:0">원</span>
       <button class="addon-btn addon-add" onclick="addAddonRow(${i})" title="줄 추가">+</button>
       <button class="addon-btn addon-remove" onclick="removeAddonRow(${i})" title="줄 삭제">−</button>
@@ -712,12 +939,18 @@ function getTotalAddonFee() {
   return addonList.reduce((s, a) => s + (parseInt(a.fee) || 0), 0);
 }
 
+// ─── 첫 구입일(연/월/일) 파싱 ───
+function getBuyDateParts() {
+  const val = document.getElementById('buyDate')?.value || '2026-08-01';
+  const [y, m, d] = val.split('-').map(Number);
+  return { year: y || 2026, month: m || 8, day: d || 1 };
+}
+
 // ─── 다음 구입 월 드롭다운 업데이트 ───
 function updateNextBuyOptions() {
-  const buyYear  = parseInt(document.getElementById('buyYear').value)  || 2026;
-  const buyMonth = parseInt(document.getElementById('buyMonth').value) || 8;
+  const { year: buyYear, month: buyMonth } = getBuyDateParts();
   const installMonths = parseInt(document.getElementById('installMonths').value) || 6;
-  const installPrincipal = parseInt(document.getElementById('installPrincipal').value) || 0;
+  const installPrincipal = numVal('installPrincipal');
 
   // 할부 월 금액 표시
   const monthlyAmt = installPrincipal > 0 ? Math.round(installPrincipal / installMonths) : 0;
@@ -760,7 +993,7 @@ function updateNextBuyOptions() {
 // 설정값 읽기
 // ═══════════════════════════════════
 function getSettings() {
-  const installPrincipal = parseInt(document.getElementById('installPrincipal').value) || 0;
+  const installPrincipal = numVal('installPrincipal');
   const installMonths    = parseInt(document.getElementById('installMonths').value)    || 6;
   const installMonthly   = installPrincipal > 0 ? Math.round(installPrincipal / installMonths) : 0;
 
@@ -768,11 +1001,12 @@ function getSettings() {
   const nextBuyVal = document.getElementById('nextBuyMonth')?.value;
   const nextBuyKey = (!nextBuyVal || nextBuyVal === 'auto') ? 'auto' : parseInt(nextBuyVal);
 
-  const baseFee = parseInt(document.getElementById('baseFee').value) || 0;
+  const baseFee = numVal('baseFee');
   const discountedBaseFee = computeDiscountedFee(baseFee);
+  const { year: buyYear, month: buyMonth, day: buyDay } = getBuyDateParts();
 
   return {
-    limit:          parseInt(document.getElementById('limit').value)      || 297000,
+    limit:          numVal('limit') || 297000,
     baseFee,
     discountedBaseFee,
     addonFee:       getTotalAddonFee(),
@@ -780,9 +1014,8 @@ function getSettings() {
     installMonths,
     installMonthly,
     nextBuyKey,
-    buyYear:        parseInt(document.getElementById('buyYear').value)    || 2026,
-    buyMonth:       parseInt(document.getElementById('buyMonth').value)   || 8,
-    startOffset:    parseInt(document.getElementById('googleStartMonth').value) || 7,
+    buyYear, buyMonth, buyDay,
+    startOffset: 7, // 표시 시작 월: 구입월 기준 최대 7개월 전부터
   };
 }
 
@@ -833,25 +1066,35 @@ function buildTimeline() {
   // ── 1. 단말 사이클 맵 구성 ──
   // 각 구입 기기 = { buyKey, installMonths, installMonthly }
   // deviceMap[key] = { installAmount, label }  (해당 달에 청구되는 할부 합산)
-  const deviceMap = {};   // key → { installAmount:합산, labels:[], isBuyMonth:bool }
+  const deviceMap = {};   // key → { installAmount:합산, labels:[], isBuyMonth:bool, deviceIds:Set }
   const freeDaySet = new Set(); // 할부 0원 달 기록
   let isBuyFreeDay = false;
 
-  function addDevice(buyKey, months, monthly) {
-    // 구입달~(구입달+months-1) 동안 할부 발생
-    for (let i = 0; i < months; i++) {
-      const k = addM(buyKey, i);
-      if (!inRange(k)) break;
-      if (!deviceMap[k]) deviceMap[k] = { installAmount:0, labels:[], isBuyMonth: i===0 };
-      deviceMap[k].installAmount += monthly;
-      deviceMap[k].labels.push(i===0 ? `구입·할부①` : `할부${i+1}`);
-      if (i===0) deviceMap[k].isBuyMonth = true;
+  // 구입일(day)이 월 중간이면 구입월은 30일 기준 일할 계산하고,
+  // 못 걷은 차액은 할부 종료 다음 달(월 개월수+1번째 달)에 추가로 청구한다.
+  // 예: 120만원/12개월(월 10만원)을 1월10일에 구입 → 1월 6.67만원(=10만원×20/30), 2~12월 10만원, 다음해 1월 3.33만원
+  function addDevice(buyKey, months, monthly, day, deviceId) {
+    const factor = Math.max(0, Math.min(1, (30 - day) / 30));
+    const firstAmt = Math.round(monthly * factor);
+    const extraAmt = monthly - firstAmt;
+
+    function touch(k, amount, label, isBuy) {
+      if (!inRange(k) || amount <= 0) return;
+      if (!deviceMap[k]) deviceMap[k] = { installAmount:0, labels:[], isBuyMonth:false, deviceIds:new Set() };
+      deviceMap[k].installAmount += amount;
+      deviceMap[k].labels.push(label);
+      deviceMap[k].deviceIds.add(deviceId);
+      if (isBuy) deviceMap[k].isBuyMonth = true;
     }
+
+    touch(buyKey, firstAmt, '구입(일할)·할부①', true);
+    for (let i = 1; i < months; i++) touch(addM(buyKey, i), monthly, `할부${i+1}`, false);
+    touch(addM(buyKey, months), extraAmt, '할부잔액', false);
   }
 
   // 첫 번째 기기
   const firstBuyKey = s.buyYear * 100 + s.buyMonth;
-  addDevice(firstBuyKey, s.installMonths, s.installMonthly);
+  addDevice(firstBuyKey, s.installMonths, s.installMonthly, s.buyDay, 'device0');
 
   // 다음 구입 키 결정
   // 재구입 최소 = firstBuyKey + 6 (최소 6개월 경과 후)
@@ -868,7 +1111,7 @@ function buildTimeline() {
   // 두 번째 이후 기기들 (2026~2030년 범위)
   let curBuyKey = nextBuyKey;
   for (let iter = 0; iter < 20 && inRange(curBuyKey); iter++) {
-    addDevice(curBuyKey, s.installMonths, s.installMonthly);
+    addDevice(curBuyKey, s.installMonths, s.installMonthly, s.buyDay, 'device'+(iter+1));
     // 다음 구입은 현재 구입월 + 재구입 간격
     let gap;
     if (s.nextBuyKey === 'auto') {
@@ -890,10 +1133,12 @@ function buildTimeline() {
   // "free" 표시는 직전에 할부가 있었다가 없어진 달로 판단
   const allInstallKeys = new Set(Object.keys(deviceMap).map(Number));
 
-  // ── 2. 청구요금 (할인 후 기본요금 + 부가서비스) ──
-  const billFee = s.discountedBaseFee + s.addonFee;
+  // ── 2. 청구요금 (할인 후 기본요금 + T우주 결합상품 + 부가서비스) ──
+  const tujuFee = getTujuFee();
+  const billFee = s.discountedBaseFee + tujuFee + s.addonFee;
   const feeDisplayEl = document.getElementById('discountedFeeDisplay');
   if (feeDisplayEl) feeDisplayEl.textContent = fmtK(s.discountedBaseFee)+'원';
+  renderTujuResult();
 
   // ── 3. 전체 날짜 목록 생성 ──
   const allKeys = [];
@@ -985,6 +1230,7 @@ function buildTimeline() {
     const isBuyMonth    = dm ? dm.isBuyMonth    : false;
     const installLabel  = dm ? dm.labels.join('+') : '—';
     const isFreeDay     = !dm || installAmount === 0; // 할부 없는 달
+    const isOverlap     = dm ? dm.deviceIds.size > 1 : false; // 두 기기 할부가 겹치는 달
 
     const slots  = slotCalc[key];
     const slotCost = slots.reduce((s,sl)=>s+sl.cost,0);
@@ -992,7 +1238,7 @@ function buildTimeline() {
     const remainder = s.limit - total;
 
     rows.push({ key, year:y, month:m,
-      installAmount, installLabel, isBuyMonth, isFreeDay,
+      installAmount, installLabel, isBuyMonth, isFreeDay, isOverlap,
       slots, slotCost,
       billFee, addonFee:s.addonFee,
       total, remainder });
@@ -1005,7 +1251,7 @@ function buildTimeline() {
 // ═══════════════════════════════════
 function renderTable(rows) {
   const tbody = document.getElementById('timeline-body');
-  let html='', prevYear=null, totalCost=0, overMonths=0;
+  let html='', prevYear=null;
 
   rows.forEach(r => {
     if(r.year!==prevYear){html+=`<tr class="year-divider"><td colspan="10">${r.year}년</td></tr>`;prevYear=r.year;}
@@ -1024,8 +1270,7 @@ function renderTable(rows) {
     if(hasBridge)          monthCell+=` <span class="badge b-bridge">브릿지</span>`;
 
     // 단말 셀 (중복 할부 지원)
-    const singleMonthly = Math.round((parseInt(document.getElementById('installPrincipal')?.value)||0) / (parseInt(document.getElementById('installMonths')?.value)||6));
-    const isDouble = r.installAmount > singleMonthly && singleMonthly > 0;
+    const isDouble = r.isOverlap;
     const deviceCell = r.installAmount > 0
       ? `<span style="font-size:10px;line-height:1.5">${r.installLabel}</span><br><span style="font-size:10px;color:${isDouble?'var(--red)':'var(--text-muted)'}">${isDouble?'⚠ 중복 ':''} ${fmtK(r.installAmount)}원</span>`
       : '—';
@@ -1104,9 +1349,6 @@ function renderTable(rows) {
     else if(r.remainder<20000&&r.remainder>=0) remClass='tight';
     else if(r.remainder<0) remClass='over';
 
-    totalCost += r.slotCost;
-    if(r.remainder<0) overMonths++;
-
     html += `<tr class="${rowClass}">
       <td>${monthCell}</td>
       <td>${r.billFee > 0 ? fmtK(r.billFee) : '—'}</td>
@@ -1122,22 +1364,6 @@ function renderTable(rows) {
   });
 
   tbody.innerHTML = html;
-
-  // 요약
-  document.getElementById('totalCost').textContent = fmtK(totalCost)+'원';
-  // 절약액: 동일 서비스 모두 월간으로만 결제했을 때와 비교
-  let monthlyOnly = 0;
-  rows.forEach(r => {
-    r.slots.forEach(sl => {
-      if (sl.type==='annual_pay') monthlyOnly += (sl.svc.monthly||0);
-      else if(sl.type==='monthly') monthlyOnly += sl.cost;
-    });
-  });
-  const saving = monthlyOnly - totalCost;
-  document.getElementById('savings').textContent = (saving>=0?'+':'')+fmtK(saving)+'원';
-  document.getElementById('savings').className = 'stat-value '+(saving>=0?'green':'red');
-  document.getElementById('overCount').textContent = overMonths+'달';
-  document.getElementById('overCount').className = 'stat-value '+(overMonths===0?'green':'red');
 }
 
 // ═══════════════════════════════════
@@ -1152,40 +1378,49 @@ function collectSettings() {
     discCombiChk:     document.getElementById('discCombiChk')?.checked,
     discCombiPct:     document.getElementById('discCombiPct')?.value,
     discWelfareChk:   document.getElementById('discWelfareChk')?.checked,
-    discWelfarePct:   document.getElementById('discWelfarePct')?.value,
+    tujuGroup:        document.getElementById('tujuGroup')?.value,
+    tujuTier:         document.getElementById('tujuTier')?.value,
+    tujuOwnTier:      document.getElementById('tujuOwnTier')?.value,
+    tujuAddon:        document.getElementById('tujuAddon')?.value,
     addonList:        JSON.stringify(addonList),
     installPrincipal: document.getElementById('installPrincipal')?.value,
     installMonths:    document.getElementById('installMonths')?.value,
-    buyYear:          document.getElementById('buyYear')?.value,
-    buyMonth:         document.getElementById('buyMonth')?.value,
+    buyDate:          document.getElementById('buyDate')?.value,
     nextBuyMonth:     document.getElementById('nextBuyMonth')?.value,
-    startOffset:      document.getElementById('googleStartMonth')?.value,
   };
 }
 
 function applySettings(cfg) {
   const set = (id, val) => { const el=document.getElementById(id); if(el&&val!=null) el.value=val; };
   const setChk = (id, val) => { const el=document.getElementById(id); if(el&&val!=null) el.checked=!!val; };
+  // 저장된 값을 그대로 복원하는 동안에는 기본요금제 ↔ T우주 자동 동기화를 막는다.
+  syncingTuju = true;
   set('limit', cfg.limit);
   set('baseFee', cfg.baseFee);
   selectedPlanId = cfg.selectedPlanId || '';
+  const restoredPlan = planById(selectedPlanId);
+  if (restoredPlan) { const fEl = document.getElementById('plan-filter'); if (fEl) fEl.value = restoredPlan.name; }
   renderPlanList();
   setChk('discSuntaek', cfg.discSuntaek);
   setChk('discCombiChk', cfg.discCombiChk);
   set('discCombiPct', cfg.discCombiPct);
   setChk('discWelfareChk', cfg.discWelfareChk);
-  set('discWelfarePct', cfg.discWelfarePct);
   onDiscToggle('discCombi');
-  onDiscToggle('discWelfare');
+  if (cfg.tujuGroup) {
+    set('tujuGroup', cfg.tujuGroup);
+    onTujuGroupChange();
+    if (cfg.tujuTier) { set('tujuTier', cfg.tujuTier); onTujuTierChange(); }
+    if (cfg.tujuOwnTier) set('tujuOwnTier', cfg.tujuOwnTier);
+    if (cfg.tujuAddon) set('tujuAddon', cfg.tujuAddon);
+  }
+  syncingTuju = false;
   if (cfg.addonList) {
     try { addonList = JSON.parse(cfg.addonList); } catch(e) {}
     renderAddonList();
   }
   set('installPrincipal', cfg.installPrincipal);
   set('installMonths', cfg.installMonths);
-  set('buyYear', cfg.buyYear);
-  set('buyMonth', cfg.buyMonth);
-  set('googleStartMonth', cfg.startOffset);
+  set('buyDate', cfg.buyDate);
   updateNextBuyOptions();
   if (cfg.nextBuyMonth) set('nextBuyMonth', cfg.nextBuyMonth);
 }
@@ -1344,7 +1579,6 @@ function switchTab(id, btn) {
 // ─── 초기화 ───
 document.addEventListener('DOMContentLoaded',()=>{
   renderAddonList();
-  renderServicesList();
   renderPlanList();
   updateNextBuyOptions();
   update();
@@ -1352,11 +1586,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     document.getElementById(id)?.addEventListener('input', ()=>{ updateNextBuyOptions(); update(); });
   });
   document.getElementById('installMonths')?.addEventListener('change', ()=>{ updateNextBuyOptions(); update(); });
-  ['buyYear','buyMonth'].forEach(id=>{
-    document.getElementById(id)?.addEventListener('change', ()=>{ updateNextBuyOptions(); update(); });
-  });
   document.getElementById('nextBuyMonth')?.addEventListener('change', update);
-  document.getElementById('googleStartMonth')?.addEventListener('change', update);
 });
 </script>
 </body>
