@@ -968,6 +968,16 @@ function getBuyDateParts() {
   return { year: y || 2026, month: m || 8, day: d || 1 };
 }
 
+// 다음 구입까지의 개월수(재구입 간격) 계산
+// - 할부 6개월: 최소 재구입 기한(구입월+6개월 경과)을 채우려면 7개월째부터 가능하고,
+//   일할 계산으로 못 걷은 잔액은 별도의 7번째 달에 청구된다.
+// - 할부 10개월 이상: 이미 6개월 최소 기한을 넘기므로 할부 개월수가 지나면 바로 재구입 가능하며,
+//   남은 잔액은 다음 스마트폰의 일할 계산분과 합산되어 그 달에 함께 청구된다.
+function computeBuyGap(installMonths) {
+  const minNextOffset = 7; // 최소 재구입 기한: 구입월+6개월 경과 후(=7번째 달)부터
+  return installMonths >= 10 ? Math.max(installMonths, minNextOffset) : Math.max(installMonths + 1, minNextOffset);
+}
+
 // ─── 할부 월 금액 / 다음 구입(자동) 안내 표시 ───
 function updateNextBuyOptions() {
   const { year: buyYear, month: buyMonth } = getBuyDateParts();
@@ -979,19 +989,15 @@ function updateNextBuyOptions() {
   const dispEl = document.getElementById('installMonthlyDisplay');
   if (dispEl) dispEl.textContent = monthlyAmt > 0 ? `월 할부금: ${fmtK(monthlyAmt)}원` : '';
 
-  // 재구입 최소 기한: 구입월 + 6개월 이후 (= 구입월 + 7번째 달부터 가능)
-  // 다음 구입은 항상 자동(할부 종료 다음달)이며, 이 최소 기한보다 이르지 않도록 계산된다.
-  const minNextOffset = 7; // 구입월 + 7번째 달 (= 6개월 경과 후 다음달)
-
+  const buyGap = computeBuyGap(installMonths);
   const infoEl = document.getElementById('next-buy-info');
   if (infoEl) {
-    let minM = buyMonth + minNextOffset, minY = buyYear;
-    while (minM > 12) { minM -= 12; minY++; }
-    infoEl.textContent = `최소 재구입 가능: ${minY}년 ${minM}월 (구입월+6개월 경과)`;
-    if (installMonths > 6) {
-      let overlapM = installMonths - 6;
-      infoEl.textContent += ` · 할부 ${installMonths}개월 → 재구입 시 ${overlapM}개월 할부 중복 발생`;
-    }
+    let nextM = buyMonth + buyGap, nextY = buyYear;
+    while (nextM > 12) { nextM -= 12; nextY++; }
+    const note = installMonths >= 10
+      ? '할부 종료와 동시에 재구입, 잔여 할부금은 다음 기기 일할분과 합산 청구'
+      : `할부 ${installMonths}개월 청구 + 잔액 정산 다음 달`;
+    infoEl.textContent = `다음 구입 예정: ${nextY}년 ${nextM}월 1일 (${note}, 자동)`;
   }
 }
 
@@ -1002,9 +1008,6 @@ function getSettings() {
   const installPrincipal = numVal('installPrincipal');
   const installMonths    = parseInt(document.getElementById('installMonths').value)    || 6;
   const installMonthly   = installPrincipal > 0 ? Math.round(installPrincipal / installMonths) : 0;
-
-  // 다음 구입은 항상 자동(할부 종료 다음달, 최소 구입월+6개월 경과)
-  const nextBuyKey = 'auto';
 
   const baseFee = numVal('baseFee');
   const discountedBaseFee = computeDiscountedFee(baseFee);
@@ -1018,7 +1021,6 @@ function getSettings() {
     installPrincipal,
     installMonths,
     installMonthly,
-    nextBuyKey,
     buyYear, buyMonth, buyDay,
     startOffset: 7, // 표시 시작 월: 구입월 기준 최대 7개월 전부터
   };
@@ -1065,9 +1067,6 @@ function buildTimeline() {
   }
   function inRange(key) { return Math.floor(key/100)>=2026 && Math.floor(key/100)<2031; }
 
-  // 재구입 최소 기한: 구입월 + 6개월
-  const minNextOffset = 6; // 6개월 경과 후 = 구입월+7번째 달부터
-
   // ── 1. 단말 사이클 맵 구성 ──
   // 각 구입 기기 = { buyKey, installMonths, installMonthly }
   // deviceMap[key] = { installAmount, label }  (해당 달에 청구되는 할부 합산)
@@ -1101,35 +1100,16 @@ function buildTimeline() {
   const firstBuyKey = s.buyYear * 100 + s.buyMonth;
   addDevice(firstBuyKey, s.installMonths, s.installMonthly, s.buyDay, 'device0');
 
-  // 다음 구입 키 결정
-  // 재구입 최소 = firstBuyKey + 6 (최소 6개월 경과 후)
-  let nextBuyKey;
-  const minNext = addM(firstBuyKey, minNextOffset + 1); // 7번째 달부터 가능
-
-  if (s.nextBuyKey === 'auto') {
-    // 자동: 할부 종료 다음달 (installMonths개월 후)
-    nextBuyKey = addM(firstBuyKey, s.installMonths);
-  } else {
-    nextBuyKey = Math.max(s.nextBuyKey, minNext);
-  }
+  // 다음 구입 키 결정 (할부 6개월: 잔액 정산 다음 달부터 / 10개월 이상: 할부 종료와 동시에,
+  // 남은 잔액은 다음 기기의 일할 계산분과 같은 달에 합산 청구된다)
+  const buyGap = computeBuyGap(s.installMonths);
+  let nextBuyKey = addM(firstBuyKey, buyGap);
 
   // 두 번째 이후 기기들 (2026~2030년 범위)
   let curBuyKey = nextBuyKey;
   for (let iter = 0; iter < 20 && inRange(curBuyKey); iter++) {
     addDevice(curBuyKey, s.installMonths, s.installMonthly, s.buyDay, 'device'+(iter+1));
-    // 다음 구입은 현재 구입월 + 재구입 간격
-    let gap;
-    if (s.nextBuyKey === 'auto') {
-      gap = s.installMonths; // 자동: 할부 종료 다음달
-    } else {
-      // 사용자가 지정한 간격 = 첫구입→두번째 간격과 동일하게 반복
-      gap = Math.round((nextBuyKey - firstBuyKey) / 100) * 12 +
-            ((nextBuyKey % 100) - (firstBuyKey % 100));
-      if (gap <= 0) gap = s.installMonths;
-    }
-    // 최소 6개월 보장
-    gap = Math.max(gap, minNextOffset + 1);
-    curBuyKey = addM(curBuyKey, gap);
+    curBuyKey = addM(curBuyKey, buyGap);
   }
 
   // 단말 0원 달: deviceMap에 없는 달 (할부가 전혀 없는 달)
