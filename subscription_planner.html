@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>회사 지원금 구독 플래너</title>
+<style>
+:root {
+  --bg:#f7f6f3; --surface:#fff; --surface2:#f0efe9;
+  --border:rgba(0,0,0,.09); --border-strong:rgba(0,0,0,.16);
+  --text:#1a1a18; --text-sub:#5a5a56; --text-muted:#9a9a94;
+  --accent:#1a5fb4; --accent-bg:#e8f0fb; --accent-border:#a8c4ef;
+  --green:#1c7a4a; --green-bg:#e4f5ec; --green-border:#8dd4ae;
+  --amber:#7a4a00; --amber-bg:#fdf3e0; --amber-border:#f0c060;
+  --red:#a32020; --red-bg:#fde8e8; --red-border:#f0a0a0;
+  --purple:#5a3a9a; --purple-bg:#ede8f8; --purple-border:#c0a8e8;
+  --radius:10px; --radius-sm:6px;
+  --shadow:0 1px 4px rgba(0,0,0,.08),0 0 0 .5px rgba(0,0,0,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Pretendard','Apple SD Gothic Neo',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;min-height:100vh}
+.header{background:var(--surface);border-bottom:.5px solid var(--border-strong);padding:18px 24px 14px;position:sticky;top:0;z-index:100}
+.header h1{font-size:17px;font-weight:600;letter-spacing:-.3px}
+.header p{font-size:12px;color:var(--text-muted);margin-top:2px}
+.container{max-width:1300px;margin:0 auto;padding:18px 14px 60px}
+.layout{display:grid;grid-template-columns:290px 1fr;gap:14px;align-items:start}
+@media(max-width:800px){.layout{grid-template-columns:1fr}}
+.card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.card-head{padding:10px 14px 8px;border-bottom:.5px solid var(--border);display:flex;align-items:center;gap:7px}
+.card-head h2{font-size:12px;font-weight:600}
+.card-body{padding:10px 14px}
+.settings-panel{position:sticky;top:68px;max-height:calc(100vh - 84px);overflow-y:auto}
+.setting-label{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.divider{height:.5px;background:var(--border);margin:9px 0}
+.input-row{display:flex;align-items:center;gap:5px;margin-bottom:5px}
+.input-row label{font-size:12px;color:var(--text-sub);flex:1;min-width:0}
+.input-row input[type="number"]{width:95px;padding:4px 6px;border:.5px solid var(--border-strong);border-radius:var(--radius-sm);font-size:12px;text-align:right;background:var(--surface);color:var(--text);flex-shrink:0}
+.input-unit{font-size:11px;color:var(--text-muted);flex-shrink:0}
+.select-row{margin-bottom:6px}
+.select-row label{font-size:12px;color:var(--text-sub);display:block;margin-bottom:3px}
+.sel{width:100%;padding:5px 6px;border:.5px solid var(--border-strong);border-radius:var(--radius-sm);font-size:12px;background:var(--surface);color:var(--text);cursor:pointer}
+.sel:focus{outline:none;border-color:var(--accent)}
+.summary-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:10px 12px}
+.stat-label{font-size:11px;color:var(--text-muted);margin-bottom:3px}
+.stat-value{font-size:19px;font-weight:700;letter-spacing:-.5px}
+.stat-value.green{color:var(--green)} .stat-value.amber{color:#b06000} .stat-value.red{color:var(--red)}
+/* 탭 */
+.tabs{display:flex;border-bottom:1px solid var(--border-strong)}
+.tab-btn{padding:7px 12px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;color:var(--text-muted);border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-content{display:none;padding:10px 14px}
+.tab-content.active{display:block}
+/* 타임라인 테이블 */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:11.5px;min-width:900px}
+thead th{background:var(--surface2);color:var(--text-muted);padding:5px 7px;text-align:right;font-size:10px;font-weight:600;border-bottom:1px solid var(--border-strong);white-space:nowrap}
+thead th:first-child{text-align:left;min-width:80px}
+thead th.c{text-align:center}
+tbody tr{border-bottom:.5px solid var(--border)}
+tbody tr:hover{background:rgba(0,0,0,.015)}
+tbody td{padding:4px 7px;text-align:right;vertical-align:middle;font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody td:first-child{text-align:left;font-weight:500;color:var(--text-sub)}
+tbody td.c{text-align:center}
+/* 구독 셀 드롭다운 스타일 */
+.sub-cell{min-width:110px;vertical-align:top;padding:3px 5px}
+.sub-drop{width:100%;padding:2px 4px;border:.5px solid var(--border-strong);border-radius:4px;font-size:10px;background:var(--surface);color:var(--text);cursor:pointer;margin-bottom:2px}
+.sub-type-row{display:flex;gap:3px;margin-bottom:2px}
+.sub-type-btn{flex:1;padding:1px 4px;font-size:9px;border:.5px solid var(--border-strong);border-radius:3px;cursor:pointer;background:var(--surface);color:var(--text-muted);text-align:center}
+.sub-type-btn.active-ann{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border)}
+.sub-type-btn.active-mon{background:var(--purple-bg);color:var(--purple);border-color:var(--purple-border)}
+.sub-active-ann{display:inline-block;font-size:9px;font-weight:600;padding:1px 5px;border-radius:3px;background:var(--green-bg);color:var(--green);border:.5px solid var(--green-border)}
+.sub-active-mon{display:inline-block;font-size:9px;font-weight:600;padding:1px 5px;border-radius:3px;background:var(--purple-bg);color:var(--purple);border:.5px solid var(--purple-border)}
+.sub-cost{font-size:10px;color:var(--text-muted)}
+/* 행 색상 */
+.row-over{background:rgba(163,32,32,.05)}
+.row-gannual{background:rgba(26,95,180,.035)}
+.row-bridge{background:rgba(90,58,154,.04)}
+.row-free{background:rgba(28,122,74,.03)}
+.year-divider td{padding:4px 7px!important;font-size:10px;font-weight:700;color:var(--text-muted);background:var(--surface2)!important;text-align:left!important;border-bottom:1px solid var(--border-strong);letter-spacing:.4px}
+.surplus-high{color:#1c7a4a;font-weight:700} .surplus{color:#2a8a5a;font-weight:500} .tight{color:#b06000;font-weight:600} .over{color:var(--red);font-weight:700}
+.badge{display:inline-block;font-size:9px;font-weight:600;padding:1px 5px;border-radius:3px;line-height:1.6;vertical-align:middle;white-space:nowrap}
+.b-buy{background:var(--amber-bg);color:var(--amber);border:.5px solid var(--amber-border)}
+.b-free{background:var(--red-bg);color:var(--red);border:.5px solid var(--red-border)}
+.b-bridge{background:var(--purple-bg);color:var(--purple);border:.5px solid var(--purple-border)}
+.b-gann{background:var(--accent-bg);color:var(--accent);border:.5px solid var(--accent-border)}
+.b-gmon{background:var(--purple-bg);color:var(--purple);border:.5px solid var(--purple-border)}
+.legend{display:flex;flex-wrap:wrap;gap:7px;padding:8px 12px;border-top:.5px solid var(--border);background:var(--surface2)}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-sub)}
+.leg-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.export-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;margin-top:8px}
+.alert-box{display:flex;align-items:flex-start;gap:9px;padding:9px 12px;border-radius:var(--radius-sm);font-size:12px;line-height:1.65;margin-bottom:9px}
+.alert-box.info{background:var(--accent-bg);border:.5px solid var(--accent-border);color:#1a3a6a}
+.alert-box.warn{background:var(--amber-bg);border:.5px solid var(--amber-border);color:var(--amber)}
+.alert-box.good{background:var(--green-bg);border:.5px solid var(--green-border);color:var(--green)}
+.alert-icon{font-size:13px;flex-shrink:0;margin-top:1px}
+/* SKT 번들 스타일 */
+.svc-block{border:.5px solid var(--border-strong);border-radius:var(--radius-sm);margin-bottom:7px;overflow:hidden}
+.svc-block.disabled .svc-detail{opacity:.4;pointer-events:none}
+.svc-header{display:flex;align-items:center;gap:7px;padding:7px 9px;background:var(--surface2);cursor:pointer;user-select:none}
+.svc-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.svc-header-name{font-size:12px;font-weight:600;flex:1}
+.svc-header-cat{font-size:10px;color:var(--text-muted);margin-right:4px}
+.switch{position:relative;width:34px;height:18px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0;position:absolute}
+.switch-track{position:absolute;inset:0;background:#ccc;border-radius:9px;cursor:pointer;transition:background .2s}
+.switch-track::after{content:'';position:absolute;left:2px;top:2px;width:14px;height:14px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.switch input:checked+.switch-track{background:var(--accent)}
+.switch input:checked+.switch-track::after{transform:translateX(16px)}
+.svc-detail{padding:7px 9px;display:none;border-top:.5px solid var(--border)}
+.svc-detail.open{display:block}
+.fee-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:7px}
+.fee-cell label{font-size:10px;color:var(--text-muted);display:block;margin-bottom:3px}
+.fee-cell input{width:100%;padding:3px 5px;border:.5px solid var(--border-strong);border-radius:4px;font-size:12px;font-weight:600;text-align:right;background:var(--surface);color:var(--text)}
+.per-month{font-size:10px;color:var(--text-muted);text-align:right;margin-top:2px}
+.bridge-option-label{font-size:10px;color:var(--text-muted);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.bridge-options{display:flex;gap:5px}
+.bridge-option{flex:1;padding:5px 7px;border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);cursor:pointer;text-align:center;font-size:11px;font-weight:500;color:var(--text-sub);background:var(--surface);transition:all .15s;line-height:1.3}
+.bridge-option-icon{font-size:13px;display:block;margin-bottom:1px}
+.bridge-option.selected-monthly{border-color:var(--purple);background:var(--purple-bg);color:var(--purple)}
+.bridge-option.selected-pause{border-color:var(--text-muted);background:var(--surface2);color:var(--text-muted)}
+/* 카탈로그 */
+.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px}
+@media(max-width:600px){.cat-grid{grid-template-columns:1fr}}
+.cat-card{border:.5px solid var(--border-strong);border-radius:var(--radius-sm);padding:8px 10px}
+.cat-card-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px}
+.cat-card-name{font-size:12px;font-weight:600} .cat-card-price{font-size:11px;font-weight:700;color:var(--accent)}
+.cat-card-sub{font-size:10px;color:var(--text-muted);margin-bottom:2px}
+.cat-card-desc{font-size:11px;color:var(--text-sub);line-height:1.4}
+/* SKT 비교기 */
+.f-btn{padding:3px 8px;font-size:11px;border:.5px solid var(--border-strong);border-radius:var(--radius-sm);cursor:pointer;background:var(--surface);color:var(--text-sub)}
+.f-btn.on{background:var(--fill-accent,var(--accent));color:#fff;border-color:var(--accent)}
+.skt-sort-btn{padding:3px 8px;font-size:11px;border:.5px solid var(--border-strong);border-radius:var(--radius-sm);cursor:pointer;background:var(--surface);color:var(--text-sub)}
+/* 요금제 리스트 */
+.plan-filter{width:100%;padding:5px 6px;border:.5px solid var(--border-strong);border-radius:var(--radius-sm);font-size:12px;background:var(--surface);color:var(--text);margin-bottom:5px}
+.plan-list{max-height:300px;overflow-y:auto;border:.5px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface)}
+.plan-item{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:5px 8px;font-size:11.5px;cursor:pointer;border-bottom:.5px solid var(--border)}
+.plan-item:last-child{border-bottom:none}
+.plan-item:hover{background:var(--surface2)}
+.plan-item.selected{background:var(--accent-bg);color:var(--accent);font-weight:600}
+.plan-item .plan-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plan-item .plan-fee{flex-shrink:0;font-variant-numeric:tabular-nums;color:var(--text-muted)}
+.plan-item.selected .plan-fee{color:var(--accent)}
+.plan-empty{padding:10px 8px;font-size:11px;color:var(--text-muted);text-align:center}
+.plan-detail-btn{width:100%;margin-top:6px;padding:6px;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;background:var(--accent);color:#fff}
+.plan-detail-btn:disabled{background:var(--surface2);color:var(--text-muted);cursor:not-allowed}
+.plan-selected-info{font-size:11px;color:var(--text-muted);background:var(--surface2);border-radius:var(--radius-sm);padding:5px 8px;line-height:1.6;margin-top:6px}
+/* 할인 */
+.disc-row{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.disc-row input[type="checkbox"]{flex-shrink:0;width:14px;height:14px;cursor:pointer}
+.disc-row label{font-size:12px;color:var(--text-sub);flex:1;min-width:0;cursor:pointer}
+.disc-row input[type="number"]{width:56px;padding:3px 5px;border:.5px solid var(--border-strong);border-radius:4px;font-size:11px;text-align:right;background:var(--surface);color:var(--text);flex-shrink:0}
+.disc-row input[type="number"]:disabled{background:var(--surface2);color:var(--text-muted)}
+.disc-result{display:flex;justify-content:space-between;align-items:baseline;background:var(--green-bg);border:.5px solid var(--green-border);border-radius:var(--radius-sm);padding:7px 9px;margin-top:6px}
+.disc-result .label{font-size:11px;color:var(--green)}
+.disc-result .value{font-size:15px;font-weight:700;color:var(--green)}
+/* 부가서비스 라인 */
+.addon-row{display:flex;gap:4px;align-items:center;margin-bottom:5px}
+.addon-row input[type="text"]{flex:1.2;padding:3px 5px;border:.5px solid var(--border-strong);border-radius:4px;font-size:11px;background:var(--surface);color:var(--text)}
+.addon-row input[type="number"]{flex:1;padding:3px 5px;border:.5px solid var(--border-strong);border-radius:4px;font-size:11px;text-align:right;background:var(--surface);color:var(--text)}
+.addon-row .addon-btn{flex-shrink:0;width:22px;height:22px;line-height:20px;padding:0;font-size:13px;font-weight:600;border:.5px solid var(--border-strong);border-radius:3px;cursor:pointer;background:var(--surface);color:var(--text-sub)}
+.addon-row .addon-add{color:var(--accent);border-color:var(--accent-border)}
+.addon-row .addon-remove{color:var(--red);border-color:var(--red-border)}
+@media print{.settings-panel,.tabs,.export-btn{display:none!important}.layout{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>📱 회사 지원금 구독 플래너</h1>
+  <p>설정을 바꾸면 2026~2030년 결제 계획이 자동으로 업데이트됩니다</p>
+</div>
+<div class="container">
+<div class="layout">
+
+<!-- ─── 왼쪽 설정 패널 ─── -->
+<div class="settings-panel">
+
+  <div class="card" style="margin-bottom:10px">
+    <div class="card-head"><span style="font-size:14px">⚙️</span><h2>기본 조건</h2></div>
+    <div class="card-body">
+      <div class="setting-label">회사 지원금</div>
+      <div class="input-row"><label>월 지원 한도</label><input type="number" id="limit" value="297000" step="1000"><span class="input-unit">원</span></div>
+      <div class="divider"></div>
+      <div class="setting-label">단말 할부 조건</div>
+      <div class="input-row"><label>할부 원금</label><input type="number" id="installPrincipal" value="" placeholder="0" step="10000"><span class="input-unit">원</span></div>
+      <div class="select-row" style="margin-bottom:0">
+        <label style="font-size:12px;color:var(--text-sub)">할부 개월</label>
+        <select id="installMonths" class="sel" onchange="update()">
+          <option value="6" selected>6개월</option>
+          <option value="12">12개월</option>
+          <option value="18">18개월</option>
+          <option value="24">24개월</option>
+        </select>
+      </div>
+      <div id="installMonthlyDisplay" style="font-size:11px;color:var(--text-muted);margin-top:5px;text-align:right"></div>
+      <div class="divider"></div>
+      <div class="setting-label">스마트폰 구입 일정</div>
+      <div class="select-row"><label>첫 구입 연도</label>
+        <select id="buyYear" class="sel" onchange="update()"><option value="2026" selected>2026년</option><option value="2027">2027년</option><option value="2028">2028년</option></select>
+      </div>
+      <div class="select-row"><label>첫 구입 월</label>
+        <select id="buyMonth" class="sel" onchange="update()">
+          <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option><option value="4">4월</option>
+          <option value="5">5월</option><option value="6">6월</option><option value="7">7월</option><option value="8" selected>8월</option>
+          <option value="9">9월</option><option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
+        </select>
+      </div>
+      <div class="input-row" style="margin-top:6px"><label>다음 구입 예정 월 (구입월+6 이후)</label></div>
+      <div class="select-row" style="margin-bottom:0">
+        <select id="nextBuyMonth" class="sel" onchange="update()">
+          <option value="auto" selected>자동 (할부 종료 다음달)</option>
+        </select>
+      </div>
+      <div id="next-buy-info" style="font-size:11px;color:var(--text-muted);margin-top:4px;line-height:1.5"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:10px">
+    <div class="card-head"><span style="font-size:14px">📡</span><h2>휴대전화 요금</h2></div>
+    <div class="card-body">
+      <div class="setting-label">기본 요금제</div>
+      <input type="text" id="plan-filter" class="plan-filter" placeholder="요금제 검색..." oninput="renderPlanList()">
+      <div id="plan-list" class="plan-list"></div>
+      <button id="plan-detail-btn" class="plan-detail-btn" onclick="openPlanDetail()" disabled>요금제 상세보기</button>
+      <div id="plan-selected-info" class="plan-selected-info" style="display:none"></div>
+      <div class="input-row" style="margin-top:8px"><label>월정액 (수정 가능)</label><input type="number" id="baseFee" value="" placeholder="0" step="1000" oninput="update()"><span class="input-unit">원</span></div>
+      <div class="divider"></div>
+      <div class="setting-label">할인</div>
+      <div class="disc-row">
+        <input type="checkbox" id="discSuntaek" onchange="update()">
+        <label for="discSuntaek">선택약정할인 (25%)</label>
+      </div>
+      <div class="disc-row">
+        <input type="checkbox" id="discCombiChk" onchange="onDiscToggle('discCombi');update()">
+        <label for="discCombiChk">결합할인</label>
+        <input type="number" id="discCombiPct" value="0" min="0" max="100" step="1" disabled oninput="update()">
+        <span class="input-unit">%</span>
+      </div>
+      <div class="disc-row">
+        <input type="checkbox" id="discWelfareChk" onchange="onDiscToggle('discWelfare');update()">
+        <label for="discWelfareChk">복지할인</label>
+        <input type="number" id="discWelfarePct" value="0" min="0" max="100" step="1" disabled oninput="update()">
+        <span class="input-unit">%</span>
+      </div>
+      <div class="disc-result">
+        <span class="label">월 기본요금 (할인 후)</span>
+        <span class="value" id="discountedFeeDisplay">0원</span>
+      </div>
+      <div class="divider"></div>
+      <div class="setting-label">부가서비스</div>
+      <div id="addon-list"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:10px">
+    <div class="card-head"><span style="font-size:14px">🔵</span><h2>Google One 연간 시작 시점</h2></div>
+    <div class="card-body">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;line-height:1.5">
+        Google One 요금제는 구독 1/2/3에서 선택합니다.<br>아래에서 연간 결제 브릿지 로직 시작 월만 설정합니다.
+      </div>
+      <div class="select-row" style="margin-bottom:0">
+        <label style="font-size:12px;color:var(--text-sub)">구독 서비스 연간 첫 결제 시작</label>
+        <select id="googleStartMonth" class="sel" onchange="update()">
+          <option value="6">6월 (할부 직전달)</option>
+          <option value="7" selected>7월 (할부 시작 전달)</option>
+          <option value="8">8월 (단말 구입과 동월)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><span style="font-size:14px">➕</span><h2>기타 추가 구독 (브릿지 설정)</h2></div>
+    <div class="card-body" style="padding-bottom:6px">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;line-height:1.5">
+        구독 1/2/3에서 선택한 서비스의 <strong>브릿지 구간</strong> 처리 방식을 설정합니다.
+      </div>
+      <div id="services-list"></div>
+    </div>
+  </div>
+
+</div><!-- /settings-panel -->
+
+<!-- ─── 오른쪽 결과 ─── -->
+<div>
+  <div class="summary-row">
+    <div class="stat-card"><div class="stat-label">구독료 총 지출 (4년간)</div><div class="stat-value amber" id="totalCost">—</div></div>
+    <div class="stat-card"><div class="stat-label">월간만 결제 대비 절약</div><div class="stat-value green" id="savings">—</div></div>
+    <div class="stat-card"><div class="stat-label">한도 초과 달 수</div><div class="stat-value" id="overCount">—</div></div>
+  </div>
+
+  <div class="card">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('timeline',this)">📅 월별 계획표</button>
+      <button class="tab-btn" onclick="switchTab('catalog',this)">📋 서비스 카탈로그</button>
+    </div>
+
+    <!-- 탭1: 타임라인 -->
+    <div id="tab-timeline" class="tab-content active">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align:left">월</th>
+              <th>청구요금</th>
+              <th>부가서비스</th>
+              <th class="c">단말</th>
+              <th class="c sub-cell">구독 1</th>
+              <th class="c sub-cell">구독 2</th>
+              <th class="c sub-cell">구독 3</th>
+              <th class="c sub-cell">구독 4</th>
+              <th>합계</th>
+              <th>잔여금</th>
+            </tr>
+          </thead>
+          <tbody id="timeline-body"></tbody>
+        </table>
+      </div>
+      <div class="legend">
+        <span class="legend-item"><span class="leg-dot" style="background:#1a5fb4"></span>연간결제</span>
+        <span class="legend-item"><span class="leg-dot" style="background:#5a3a9a"></span>브릿지(월간)</span>
+        <span class="legend-item"><span class="leg-dot" style="background:#1c7a4a"></span>단말 0원달</span>
+        <span class="legend-item"><span class="leg-dot" style="background:#c08000"></span>구입</span>
+        <span class="legend-item"><span class="leg-dot" style="background:#a32020"></span>한도 초과</span>
+      </div>
+      <div style="padding:0 12px 12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="export-btn" onclick="window.print()">🖨️ 인쇄/PDF</button>
+        <button class="export-btn" onclick="saveToJson()" style="background:var(--green)">💾 JSON 저장</button>
+        <label class="export-btn" style="background:var(--purple);cursor:pointer">
+          📂 JSON 불러오기
+          <input type="file" accept=".json" onchange="loadFromJson(event)" style="display:none">
+        </label>
+        <span id="save-status" style="font-size:11px;color:var(--text-muted)"></span>
+      </div>
+    </div>
+
+    <!-- 탭2: 카탈로그 -->
+    <div id="tab-catalog" class="tab-content">
+      <div style="font-size:12px;color:var(--text-sub);margin-bottom:10px">연간 결제 가능한 주요 구독 서비스 목록입니다.</div>
+      <div class="setting-label">🔵 Google One</div>
+      <div class="cat-grid">
+        <div class="cat-card"><div class="cat-card-head"><span class="cat-card-name">Basic 100GB</span><span class="cat-card-price">24,000원/년</span></div><div class="cat-card-sub">월 2,400원</div><div class="cat-card-desc">100GB 스토리지. AI 기능 없음.</div></div>
+        <div class="cat-card"><div class="cat-card-head"><span class="cat-card-name">Standard 200GB</span><span class="cat-card-price">37,000원/년</span></div><div class="cat-card-sub">월 3,700원</div><div class="cat-card-desc">200GB 스토리지. AI 기능 없음.</div></div>
+        <div class="cat-card" style="border-color:var(--accent-border)"><div class="cat-card-head"><span class="cat-card-name">AI Plus 400GB</span><span class="cat-card-price">75,000원/년</span></div><div class="cat-card-sub">월 7,500원 · SKT AI Max T우주 포함</div><div class="cat-card-desc">400GB + Gemini Advanced. SKT AI Max 번들에 포함.</div></div>
+        <div class="cat-card" style="border-color:var(--accent-border)"><div class="cat-card-head"><span class="cat-card-name">Premium 2TB</span><span class="cat-card-price">119,000원/년</span></div><div class="cat-card-sub">월 11,900원</div><div class="cat-card-desc">2TB + Google AI Pro + 가족 공유. SKT AI Max 번들에서 추가 선택 가능.</div></div>
+      </div>
+      <div class="divider"></div>
+      <div class="setting-label">📺 OTT</div>
+      <div class="cat-grid">
+        <div class="cat-card"><div class="cat-card-head"><span class="cat-card-name">Disney+</span><span class="cat-card-price">139,000원/년</span></div><div class="cat-card-sub">월 환산 11,583원 · 월간 13,900원</div><div class="cat-card-desc">마블, 픽사, 스타워즈, 내셔널지오그래픽</div></div>
+        <div class="cat-card"><div class="cat-card-head"><span class="cat-card-name">웨이브 스탠다드</span><span class="cat-card-price">139,900원/년</span></div><div class="cat-card-sub">월 환산 11,658원 · 월간 13,900원</div><div class="cat-card-desc">KBS·MBC·SBS 지상파 + 웨이브 오리지널</div></div>
+        <div class="cat-card"><div class="cat-card-head"><span class="cat-card-name">웨이브 프리미엄</span><span class="cat-card-price">166,800원/년</span></div><div class="cat-card-sub">월 환산 13,900원 · 월간 16,900원</div><div class="cat-card-desc">4K UHD + 동시 4기기</div></div>
+        <div class="cat-card"><div class="cat-card-head"><span class="cat-card-name">애플TV+</span><span class="cat-card-price">78,000원/년</span></div><div class="cat-card-sub">월 6,500원</div><div class="cat-card-desc">Severance, Ted Lasso 등 오리지널</div></div>
+        <div class="cat-card"><div class="cat-card-head"><span class="cat-card-name">TVING 스탠다드</span><span class="cat-card-price">135,000원/년</span></div><div class="cat-card-sub">월 환산 11,250원 · 월간 13,500원</div><div class="cat-card-desc">tvN, OCN, 스포츠 채널 등</div></div>
+      </div>
+      <div class="divider"></div>
+      <div class="setting-label">🎵 음악</div>
+      <div class="cat-grid">
+        <div class="cat-card"><div class="cat-card-head"><span class="cat-card-name">멜론 무제한</span><span class="cat-card-price">108,000원/년</span></div><div class="cat-card-sub">월 환산 9,000원 · 월간 10,900원</div><div class="cat-card-desc">국내 1위, K-POP 특화</div></div>
+        <div class="cat-card"><div class="cat-card-head"><span class="cat-card-name">애플뮤직 개인</span><span class="cat-card-price">106,800원/년</span></div><div class="cat-card-sub">월 환산 8,900원 · 월간 8,900원</div><div class="cat-card-desc">무손실·돌비 애트모스, 아이폰 최적</div></div>
+        <div class="cat-card"><div class="cat-card-head"><span class="cat-card-name">애플뮤직 가족 6인</span><span class="cat-card-price">162,000원/년</span></div><div class="cat-card-sub">월 환산 13,500원</div><div class="cat-card-desc">국내 유일 가족 공유</div></div>
+        <div class="cat-card"><div class="cat-card-head"><span class="cat-card-name">지니뮤직</span><span class="cat-card-price">108,000원/년</span></div><div class="cat-card-sub">월 환산 9,000원 · 월간 10,900원</div><div class="cat-card-desc">KT 계열, Hi-Fi 무손실 음질</div></div>
+      </div>
+      <div class="divider"></div>
+      <div class="setting-label">📚 전자책·도서</div>
+      <div class="cat-grid">
+        <div class="cat-card"><div class="cat-card-head"><span class="cat-card-name">밀리의서재</span><span class="cat-card-price">118,800원/년</span></div><div class="cat-card-sub">월 환산 9,900원 · 연말 프로모션 99,000원</div><div class="cat-card-desc">전자책 20만권 무제한, 오디오북</div></div>
+        <div class="cat-card"><div class="cat-card-head"><span class="cat-card-name">교보문고 sam 무제한</span><span class="cat-card-price">156,000원/년</span></div><div class="cat-card-sub">월 환산 13,000원</div><div class="cat-card-desc">전자책+오디오북+논문, EBS 어학교재</div></div>
+      </div>
+      <div class="divider"></div>
+      <div class="setting-label">🎮 게임</div>
+      <div class="cat-grid">
+        <div class="cat-card"><div class="cat-card-head"><span class="cat-card-name">PS Plus 에센셜</span><span class="cat-card-price">86,400원/년</span></div><div class="cat-card-sub">월 환산 7,200원 · 월간 12,000원</div><div class="cat-card-desc">멀티플레이 + 무료 게임 월 2~3개</div></div>
+        <div class="cat-card"><div class="cat-card-head"><span class="cat-card-name">PS Plus 스페셜</span><span class="cat-card-price">145,800원/년</span></div><div class="cat-card-sub">월 환산 12,150원 · 월간 18,000원</div><div class="cat-card-desc">에센셜 + PS4/PS5 게임 카탈로그</div></div>
+        <div class="cat-card"><div class="cat-card-head"><span class="cat-card-name">PS Plus 디럭스</span><span class="cat-card-price">171,000원/년</span></div><div class="cat-card-sub">월 환산 14,250원 · 월간 21,000원</div><div class="cat-card-desc">스페셜 + 클래식 카탈로그 + 게임 체험판</div></div>
+        <div class="cat-card"><div class="cat-card-head"><span class="cat-card-name">닌텐도 스위치 온라인</span><span class="cat-card-price">48,000원/년</span></div><div class="cat-card-sub">월 환산 4,000원 (연간 전용)</div><div class="cat-card-desc">닌텐도 멀티플레이 + 레트로 클래식</div></div>
+        <div class="cat-card"><div class="cat-card-head"><span class="cat-card-name">애플 아케이드</span><span class="cat-card-price">78,000원/년</span></div><div class="cat-card-sub">월 환산 6,500원</div><div class="cat-card-desc">애플 기기 전용, 광고·인앱결제 없음</div></div>
+      </div>
+    </div>
+
+  </div>
+</div><!-- /right -->
+</div><!-- /layout -->
+</div><!-- /container -->
+
+<script>
+// ═══════════════════════════════════
+// 구독 서비스 마스터 목록
+// ═══════════════════════════════════
+const SVC_CATALOG = [
+  // id, name, cat, annual, monthly, color
+  {id:'g_free',    name:'Google One 무료(15GB)',      cat:'🔵 Google One', annual:0,      monthly:0,     color:'#4285f4'},
+  {id:'g_basic',   name:'Google Basic(100GB)',        cat:'🔵 Google One', annual:24000,  monthly:2400,  color:'#4285f4'},
+  {id:'g_std',     name:'Google Standard(200GB)',     cat:'🔵 Google One', annual:37000,  monthly:3700,  color:'#4285f4'},
+  {id:'g_aiplus',  name:'Google AI Plus(400GB)',      cat:'🔵 Google One', annual:75000,  monthly:7500,  color:'#1a5fb4'},
+  {id:'g_premium', name:'Google Premium(2TB)',        cat:'🔵 Google One', annual:119000, monthly:11900, color:'#1a5fb4'},
+  {id:'disney',    name:'Disney+',                    cat:'📺 OTT',        annual:139000, monthly:13900, color:'#0063e5'},
+  {id:'wavve_s',   name:'웨이브 스탠다드',             cat:'📺 OTT',        annual:139900, monthly:13900, color:'#1a7fd4'},
+  {id:'wavve_p',   name:'웨이브 프리미엄',             cat:'📺 OTT',        annual:166800, monthly:16900, color:'#1a7fd4'},
+  {id:'tving',     name:'TVING 스탠다드',              cat:'📺 OTT',        annual:135000, monthly:13500, color:'#e30000'},
+  {id:'appletv',   name:'애플TV+',                    cat:'📺 OTT',        annual:78000,  monthly:6500,  color:'#555'},
+  {id:'melon',     name:'멜론 무제한',                 cat:'🎵 음악',       annual:108000, monthly:10900, color:'#00cd3c'},
+  {id:'applemusic',name:'애플뮤직 개인',               cat:'🎵 음악',       annual:106800, monthly:8900,  color:'#fc3c44'},
+  {id:'applemu_f', name:'애플뮤직 가족(6인)',           cat:'🎵 음악',       annual:162000, monthly:13500, color:'#fc3c44'},
+  {id:'ginimusic', name:'지니뮤직',                   cat:'🎵 음악',       annual:108000, monthly:10900, color:'#0090ff'},
+  {id:'millie',    name:'밀리의서재',                  cat:'📚 도서',       annual:118800, monthly:11900, color:'#ff6b2b'},
+  {id:'sam',       name:'교보문고 sam',                cat:'📚 도서',       annual:156000, monthly:13000, color:'#e03a3c'},
+  {id:'ps_ess',    name:'PS Plus 에센셜',              cat:'🎮 게임',       annual:86400,  monthly:12000, color:'#003087'},
+  {id:'ps_spe',    name:'PS Plus 스페셜',              cat:'🎮 게임',       annual:145800, monthly:18000, color:'#0050a0'},
+  {id:'ps_del',    name:'PS Plus 디럭스',              cat:'🎮 게임',       annual:171000, monthly:21000, color:'#1070c8'},
+  {id:'nintendo',  name:'닌텐도 스위치 온라인',         cat:'🎮 게임',       annual:48000,  monthly:0,     color:'#e60012'},
+  {id:'apple_arc', name:'애플 아케이드',               cat:'🎮 게임',       annual:78000,  monthly:6500,  color:'#0071e3'},
+];
+
+// ── 셀별 독립 구독 상태 ──
+// cellState[key][si] = { svcId:'', mode:'annual'|'monthly', upgradeKey:null|YYYYMM, upgradeToId:'' }
+// upgradeKey: 연간 구독 중 업그레이드를 실행할 달 (YYYYMM)
+// upgradeToId: 업그레이드할 상위 Google One 요금제 id
+const cellState = {}; // { [key]: [slot0, slot1, slot2] }
+
+function getCellState(key, si) {
+  if (!cellState[key]) cellState[key] = [
+    {svcId:'',mode:'annual',upgradeKey:null,upgradeToId:''},
+    {svcId:'',mode:'annual',upgradeKey:null,upgradeToId:''},
+    {svcId:'',mode:'annual',upgradeKey:null,upgradeToId:''},
+    {svcId:'',mode:'annual',upgradeKey:null,upgradeToId:''}
+  ];
+  return cellState[key][si];
+}
+function setCellState(key, si, patch) {
+  if (!cellState[key]) cellState[key] = [
+    {svcId:'',mode:'annual',upgradeKey:null,upgradeToId:''},
+    {svcId:'',mode:'annual',upgradeKey:null,upgradeToId:''},
+    {svcId:'',mode:'annual',upgradeKey:null,upgradeToId:''},
+    {svcId:'',mode:'annual',upgradeKey:null,upgradeToId:''}
+  ];
+  Object.assign(cellState[key][si], patch);
+}
+
+// Google One 요금제 판별 (upgrade 기능 대상)
+const GOOGLE_IDS = ['g_free','g_basic','g_std','g_aiplus','g_premium'];
+// 업그레이드 가능한 상위 요금제 목록 (현재 요금제보다 상위만)
+const GOOGLE_ORDER = ['g_free','g_basic','g_std','g_aiplus','g_premium'];
+function isGoogleSvc(svcId) { return GOOGLE_IDS.includes(svcId); }
+function googleUpgradeOptions(currentSvcId) {
+  const idx = GOOGLE_ORDER.indexOf(currentSvcId);
+  if (idx < 0) return [];
+  return GOOGLE_ORDER.slice(idx+1).map(id => svcById(id)).filter(Boolean);
+}
+
+// ── 브릿지 설정 (왼쪽 패널용) — 미사용으로 간소화 ──
+const bridgeState = {};
+SVC_CATALOG.forEach(s => { bridgeState[s.id] = 'pause'; });
+
+function svcById(id) { return SVC_CATALOG.find(s => s.id === id); }
+function fmt(n)  { return Math.abs(Math.round(n)).toLocaleString('ko-KR'); }
+function fmtK(n) { return Math.round(n).toLocaleString('ko-KR'); }
+
+// ═══════════════════════════════════
+// 왼쪽 패널: 안내 표시
+// ═══════════════════════════════════
+function renderServicesList() {
+  const container = document.getElementById('services-list');
+  if (!container) return;
+  container.innerHTML = '<div style="font-size:11px;color:var(--text-muted);line-height:1.6">구독 1/2/3은 월별 계획표의 각 셀에서 직접 선택합니다.<br>연간 구독은 해당 달에만 결제되고, 이후 11개월은 유효기간으로 표시됩니다.<br>유효기간 종료 후 다음 달에 새 서비스를 선택할 수 있습니다.</div>';
+}
+
+// ═══════════════════════════════════
+// SKT 요금제 데이터 (첨부 xlsx에서 추출)
+// ═══════════════════════════════════
+const SKT_PLANS = [
+  {id:'NA00009818',name:'베스트 Max(Google AI)',fee:129000,disc:96750,link:'https://www.tworld.co.kr/web/product/callplan/NA00009818'},
+  {id:'NA00009814',name:'베스트 Max(유튜브 프리미엄)',fee:129000,disc:96750,link:'https://www.tworld.co.kr/web/product/callplan/NA00009814'},
+  {id:'NA00009815',name:'베스트 Max(넷플릭스)',fee:129000,disc:96750,link:'https://www.tworld.co.kr/web/product/callplan/NA00009815'},
+  {id:'NA00009817',name:'베스트 Max(티빙&웨이브)',fee:129000,disc:96750,link:'https://www.tworld.co.kr/web/product/callplan/NA00009817'},
+  {id:'NA00009816',name:'베스트 Max(디즈니+)',fee:129000,disc:96750,link:'https://www.tworld.co.kr/web/product/callplan/NA00009816'},
+  {id:'NA00009813',name:'베스트 Max(T 우주)',fee:129000,disc:96750,link:'https://www.tworld.co.kr/web/product/callplan/NA00009813'},
+  {id:'NA00009819',name:'베스트 Max(스마트기기)',fee:129000,disc:96750,link:'https://www.tworld.co.kr/web/product/callplan/NA00009819'},
+  {id:'NA00009811',name:'베스트 Pro(Google AI)',fee:119000,disc:89250,link:'https://www.tworld.co.kr/web/product/callplan/NA00009811'},
+  {id:'NA00009807',name:'베스트 Pro(유튜브 프리미엄)',fee:119000,disc:89250,link:'https://www.tworld.co.kr/web/product/callplan/NA00009807'},
+  {id:'NA00009808',name:'베스트 Pro(넷플릭스)',fee:119000,disc:89250,link:'https://www.tworld.co.kr/web/product/callplan/NA00009808'},
+  {id:'NA00009810',name:'베스트 Pro(티빙&웨이브)',fee:119000,disc:89250,link:'https://www.tworld.co.kr/web/product/callplan/NA00009810'},
+  {id:'NA00009809',name:'베스트 Pro(디즈니+)',fee:119000,disc:89250,link:'https://www.tworld.co.kr/web/product/callplan/NA00009809'},
+  {id:'NA00009806',name:'베스트 Pro(T 우주)',fee:119000,disc:89250,link:'https://www.tworld.co.kr/web/product/callplan/NA00009806'},
+  {id:'NA00009812',name:'베스트 Pro(스마트기기)',fee:119000,disc:89250,link:'https://www.tworld.co.kr/web/product/callplan/NA00009812'},
+  {id:'NA00009801',name:'베스트 109(유튜브 프리미엄)',fee:109000,disc:81750,link:'https://www.tworld.co.kr/web/product/callplan/NA00009801'},
+  {id:'NA00009802',name:'베스트 109(넷플릭스)',fee:109000,disc:81750,link:'https://www.tworld.co.kr/web/product/callplan/NA00009802'},
+  {id:'NA00009803',name:'베스트 109(디즈니+)',fee:109000,disc:81750,link:'https://www.tworld.co.kr/web/product/callplan/NA00009803'},
+  {id:'NA00009804',name:'베스트 109(티빙&웨이브)',fee:109000,disc:81750,link:'https://www.tworld.co.kr/web/product/callplan/NA00009804'},
+  {id:'NA00009800',name:'베스트 109(T 우주)',fee:109000,disc:81750,link:'https://www.tworld.co.kr/web/product/callplan/NA00009800'},
+  {id:'NA00009805',name:'베스트 109(스마트기기)',fee:109000,disc:81750,link:'https://www.tworld.co.kr/web/product/callplan/NA00009805'},
+  {id:'NA00002502',name:'올인원 94',fee:103400,disc:85112,link:'https://www.tworld.co.kr/web/product/callplan/NA00002502'},
+  {id:'NA00002618',name:'무료음성 94',fee:103400,disc:85112,link:'https://www.tworld.co.kr/web/product/callplan/NA00002618'},
+  {id:'NA00009797',name:'베스트 99(넷플릭스)',fee:99000,disc:74250,link:'https://www.tworld.co.kr/web/product/callplan/NA00009797'},
+  {id:'NA00009798',name:'베스트 99(디즈니+)',fee:99000,disc:74250,link:'https://www.tworld.co.kr/web/product/callplan/NA00009798'},
+  {id:'NA00009799',name:'베스트 99(티빙&웨이브)',fee:99000,disc:74250,link:'https://www.tworld.co.kr/web/product/callplan/NA00009799'},
+  {id:'NA00009796',name:'베스트 99(T 우주)',fee:99000,disc:74250,link:'https://www.tworld.co.kr/web/product/callplan/NA00009796'},
+  {id:'NA00009793',name:'베스트 89(넷플릭스)',fee:89000,disc:66750,link:'https://www.tworld.co.kr/web/product/callplan/NA00009793'},
+  {id:'NA00009794',name:'베스트 89(디즈니+)',fee:89000,disc:66750,link:'https://www.tworld.co.kr/web/product/callplan/NA00009794'},
+  {id:'NA00009795',name:'베스트 89(티빙&웨이브)',fee:89000,disc:66750,link:'https://www.tworld.co.kr/web/product/callplan/NA00009795'},
+  {id:'NA00009792',name:'베스트 89(T 우주)',fee:89000,disc:66750,link:'https://www.tworld.co.kr/web/product/callplan/NA00009792'},
+  {id:'NA00002501',name:'올인원 79',fee:86900,disc:71362,link:'https://www.tworld.co.kr/web/product/callplan/NA00002501'},
+  {id:'NA00002617',name:'무료음성 79',fee:86900,disc:71362,link:'https://www.tworld.co.kr/web/product/callplan/NA00002617'},
+  {id:'NA00009791',name:'라이트 79',fee:79000,disc:59250,link:'https://www.tworld.co.kr/web/product/callplan/NA00009791'},
+  {id:'NA00009122',name:'다이렉트5G 76(유튜브 프리미엄)',fee:76000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00009122'},
+  {id:'NA00008723',name:'다이렉트5G 76(넷플릭스)',fee:76000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00008723'},
+  {id:'NA00009468',name:'다이렉트5G 76(티빙)',fee:76000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00009468'},
+  {id:'NA00009127',name:'다이렉트5G 76(디즈니+)',fee:76000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00009127'},
+  {id:'NA00009101',name:'다이렉트5G 76(스마트기기)',fee:76000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00009101'},
+  {id:'NA00008685',name:'다이렉트5G 76(T 우주)',fee:76000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00008685'},
+  {id:'NA00002708',name:'올인원 64',fee:70400,disc:58162,link:'https://www.tworld.co.kr/web/product/callplan/NA00002708'},
+  {id:'NA00002616',name:'무료음성 64',fee:70400,disc:58162,link:'https://www.tworld.co.kr/web/product/callplan/NA00002616'},
+  {id:'NA00009790',name:'라이트 69',fee:69000,disc:51750,link:'https://www.tworld.co.kr/web/product/callplan/NA00009790'},
+  {id:'NA00008724',name:'다이렉트5G 69(넷플릭스)',fee:69000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00008724'},
+  {id:'NA00008730',name:'0 청년 다이렉트 69(넷플릭스)',fee:69000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00008730'},
+  {id:'NA00009469',name:'다이렉트5G 69(티빙)',fee:69000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00009469'},
+  {id:'NA00009472',name:'0 청년 다이렉트 69(티빙)',fee:69000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00009472'},
+  {id:'NA00009128',name:'다이렉트5G 69(디즈니+)',fee:69000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00009128'},
+  {id:'NA00009131',name:'0 청년 다이렉트 69(디즈니+)',fee:69000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00009131'},
+  {id:'NA00009872',name:'Easy XL',fee:69000,disc:51750,link:'https://www.tworld.co.kr/web/product/callplan/NA00009872'},
+  {id:'NA00008100',name:'다이렉트5G 69(T 우주)',fee:69000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00008100'},
+  {id:'NA00008154',name:'0 청년 다이렉트 69(T 우주)',fee:69000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00008154'},
+  {id:'NA00009789',name:'라이트 59 75GB업',fee:68000,disc:51000,link:'https://www.tworld.co.kr/web/product/callplan/NA00009789'},
+  {id:'NA00009788',name:'라이트 59 50GB업',fee:66000,disc:49500,link:'https://www.tworld.co.kr/web/product/callplan/NA00009788'},
+  {id:'NA00009787',name:'라이트 59 30GB업',fee:64000,disc:48000,link:'https://www.tworld.co.kr/web/product/callplan/NA00009787'},
+  {id:'NA00009786',name:'라이트 59 13GB업',fee:62000,disc:46499,link:'https://www.tworld.co.kr/web/product/callplan/NA00009786'},
+  {id:'NA00008725',name:'다이렉트5G 62(넷플릭스)',fee:62000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00008725'},
+  {id:'NA00008731',name:'0 청년 다이렉트 62(넷플릭스)',fee:62000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00008731'},
+  {id:'NA00008104',name:'다이렉트5G 62',fee:62000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00008104'},
+  {id:'NA00008155',name:'0 청년 다이렉트 62',fee:62000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00008155'},
+  {id:'NA00002500',name:'올인원 54',fee:59400,disc:49362,link:'https://www.tworld.co.kr/web/product/callplan/NA00002500'},
+  {id:'NA00002317',name:'무료음성 54',fee:59400,disc:49362,link:'https://www.tworld.co.kr/web/product/callplan/NA00002317'},
+  {id:'NA00009785',name:'라이트 59',fee:59000,disc:44250,link:'https://www.tworld.co.kr/web/product/callplan/NA00009785'},
+  {id:'NA00009873',name:'Easy L',fee:59000,disc:44250,link:'https://www.tworld.co.kr/web/product/callplan/NA00009873'},
+  {id:'NA00009784',name:'라이트 55',fee:55000,disc:41250,link:'https://www.tworld.co.kr/web/product/callplan/NA00009784'},
+  {id:'NA00008099',name:'다이렉트5G 55',fee:55000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00008099'},
+  {id:'NA00008156',name:'0 청년 다이렉트 55',fee:55000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00008156'},
+  {id:'NA00003656',name:'뉴태블릿45 요금제',fee:49500,disc:42075,link:'https://www.tworld.co.kr/web/product/callplan/NA00003656'},
+  {id:'NA00009783',name:'라이트 49',fee:49000,disc:36750,link:'https://www.tworld.co.kr/web/product/callplan/NA00009783'},
+  {id:'NA00009874',name:'Easy M',fee:49000,disc:36750,link:'https://www.tworld.co.kr/web/product/callplan/NA00009874'},
+  {id:'NA00002707',name:'올인원 44',fee:48400,disc:40287,link:'https://www.tworld.co.kr/web/product/callplan/NA00002707'},
+  {id:'NA00003048',name:'올인원팅44',fee:48400,disc:40287,link:'https://www.tworld.co.kr/web/product/callplan/NA00003048'},
+  {id:'NA00002316',name:'무료음성 44',fee:48400,disc:40287,link:'https://www.tworld.co.kr/web/product/callplan/NA00002316'},
+  {id:'NA00008098',name:'다이렉트5G 48',fee:48000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00008098'},
+  {id:'NA00008157',name:'0 청년 다이렉트 48',fee:48000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00008157'},
+  {id:'NA00009782',name:'라이트 45',fee:45000,disc:33750,link:'https://www.tworld.co.kr/web/product/callplan/NA00009782'},
+  {id:'NA00008234',name:'5G 시니어 B형',fee:44000,disc:33000,link:'https://www.tworld.co.kr/web/product/callplan/NA00008234'},
+  {id:'NA00008235',name:'5G 시니어 C형',fee:42000,disc:31500,link:'https://www.tworld.co.kr/web/product/callplan/NA00008235'},
+  {id:'NA00007625',name:'다이렉트5G 42',fee:42000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00007625'},
+  {id:'NA00008158',name:'0 청년 다이렉트 42',fee:42000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00008158'},
+  {id:'NA00005628',name:'주말엔 팅 3.0G',fee:41000,disc:30750,link:'https://www.tworld.co.kr/web/product/callplan/NA00005628'},
+  {id:'NA00009781',name:'라이트 39',fee:39000,disc:29250,link:'https://www.tworld.co.kr/web/product/callplan/NA00009781'},
+  {id:'NA00009875',name:'Easy S',fee:39000,disc:29250,link:'https://www.tworld.co.kr/web/product/callplan/NA00009875'},
+  {id:'NA00007164',name:'다이렉트5G 38',fee:38000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00007164'},
+  {id:'NA00002817',name:'올인원 34',fee:37400,disc:31075,link:'https://www.tworld.co.kr/web/product/callplan/NA00002817'},
+  {id:'NA00003011',name:'올인원팅34',fee:37400,disc:31075,link:'https://www.tworld.co.kr/web/product/callplan/NA00003011'},
+  {id:'NA00002315',name:'무료음성 34',fee:37400,disc:31075,link:'https://www.tworld.co.kr/web/product/callplan/NA00002315'},
+  {id:'NA00007492',name:'ZEM플랜 퍼펙트',fee:36000,disc:27000,link:'https://www.tworld.co.kr/web/product/callplan/NA00007492'},
+  {id:'NA00005362',name:'손누리 3.0G',fee:34650,disc:25987,link:'https://www.tworld.co.kr/web/product/callplan/NA00005362'},
+  {id:'NA00005365',name:'소리누리 2.4G',fee:34650,disc:25987,link:'https://www.tworld.co.kr/web/product/callplan/NA00005365'},
+  {id:'NA00007626',name:'다이렉트5G 34',fee:34000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00007626'},
+  {id:'NA00008160',name:'0 청년 다이렉트 34',fee:34000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00008160'},
+  {id:'NA00006534',name:'T플랜 세이브',fee:33000,disc:24750,link:'https://www.tworld.co.kr/web/product/callplan/NA00006534'},
+  {id:'NA00001959',name:'T login 레귤러(4G)',fee:32890,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00001959'},
+  {id:'NA00003655',name:'뉴태블릿29 요금제',fee:31900,disc:27087,link:'https://www.tworld.co.kr/web/product/callplan/NA00003655'},
+  {id:'NA00002594',name:'팅PLUS29요금',fee:31900,disc:23925,link:'https://www.tworld.co.kr/web/product/callplan/NA00002594'},
+  {id:'NA00008684',name:'다이렉트5G 31',fee:31000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00008684'},
+  {id:'NA00005627',name:'주말엔 팅 세이브',fee:31000,disc:23250,link:'https://www.tworld.co.kr/web/product/callplan/NA00005627'},
+  {id:'NA00002550',name:'무료음성 28',fee:30800,disc:25162,link:'https://www.tworld.co.kr/web/product/callplan/NA00002550'},
+  {id:'NA00008285',name:'0 청년 다이렉트 30',fee:30000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00008285'},
+  {id:'NA00005361',name:'손누리 1.5G',fee:29700,disc:22275,link:'https://www.tworld.co.kr/web/product/callplan/NA00005361'},
+  {id:'NA00005364',name:'소리누리 1.2G',fee:29700,disc:22275,link:'https://www.tworld.co.kr/web/product/callplan/NA00005364'},
+  {id:'NA00005479',name:'뉴 T끼리 맞춤형(100분+250MB)',fee:27830,disc:20872,link:'https://www.tworld.co.kr/web/product/callplan/NA00005479'},
+  {id:'NA00008683',name:'다이렉트5G 27',fee:27000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00008683'},
+  {id:'NA00002593',name:'팅PLUS24요금',fee:26400,disc:19800,link:'https://www.tworld.co.kr/web/product/callplan/NA00002593'},
+  {id:'NA00002913',name:'T login 라이트(1.5G)',fee:26400,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00002913'},
+  {id:'NA00007493',name:'ZEM플랜 베스트',fee:26000,disc:19500,link:'https://www.tworld.co.kr/web/product/callplan/NA00007493'},
+  {id:'NA00006862',name:'5G Tab 4GB(공유)',fee:26000,disc:19500,link:'https://www.tworld.co.kr/web/product/callplan/NA00006862'},
+  {id:'NA00006864',name:'5G Tab 4GB(단독)',fee:26000,disc:19500,link:'https://www.tworld.co.kr/web/product/callplan/NA00006864'},
+  {id:'NA00004837',name:'T 포켓파이 20',fee:24750,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00004837'},
+  {id:'NA00002671',name:'복지210+요금',fee:23100,disc:17325,link:'https://www.tworld.co.kr/web/product/callplan/NA00002671'},
+  {id:'NA00007166',name:'다이렉트LTE 22',fee:22000,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00007166'},
+  {id:'NA00002592',name:'팅PLUS19요금',fee:20900,disc:15675,link:'https://www.tworld.co.kr/web/product/callplan/NA00002592'},
+  {id:'NA00003036',name:'무료음성 19',fee:20900,disc:15950,link:'https://www.tworld.co.kr/web/product/callplan/NA00003036'},
+  {id:'NA00005058',name:'T Tab 18(공유)',fee:19800,disc:14850,link:'https://www.tworld.co.kr/web/product/callplan/NA00005058'},
+  {id:'NA00005069',name:'T Tab 18',fee:19800,disc:14850,link:'https://www.tworld.co.kr/web/product/callplan/NA00005069'},
+  {id:'NA00004891',name:'ZEM플랜 스마트',fee:19800,disc:14850,link:'https://www.tworld.co.kr/web/product/callplan/NA00004891'},
+  {id:'NA00004934',name:'T끼리 어르신',fee:19800,disc:14850,link:'https://www.tworld.co.kr/web/product/callplan/NA00004934'},
+  {id:'NA00004836',name:'T 포켓파이 10',fee:16500,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00004836'},
+  {id:'NA00002670',name:'복지150+요금',fee:16500,disc:12375,link:'https://www.tworld.co.kr/web/product/callplan/NA00002670'},
+  {id:'NA00001900',name:'손사랑요금제',fee:15400,disc:11550,link:'https://www.tworld.co.kr/web/product/callplan/NA00001900'},
+  {id:'NA00002870',name:'소리사랑',fee:15400,disc:11550,link:'https://www.tworld.co.kr/web/product/callplan/NA00002870'},
+  {id:'NA00002591',name:'팅PLUS14요금',fee:15400,disc:11550,link:'https://www.tworld.co.kr/web/product/callplan/NA00002591'},
+  {id:'NA00004761',name:'LTE Watch(공유)',fee:12100,disc:9075,link:'https://www.tworld.co.kr/web/product/callplan/NA00004761'},
+  {id:'NA00005941',name:'LTE Watch(공유II)',fee:12100,disc:9075,link:'https://www.tworld.co.kr/web/product/callplan/NA00005941'},
+  {id:'NA00004997',name:'LTE Watch(단독)',fee:12100,disc:9075,link:'https://www.tworld.co.kr/web/product/callplan/NA00004997'},
+  {id:'NA00002200',name:'표준요금제',fee:12100,disc:9075,link:'https://www.tworld.co.kr/web/product/callplan/NA00002200'},
+  {id:'NA00002669',name:'팅주니어표준+요금',fee:11000,disc:8250,link:'https://www.tworld.co.kr/web/product/callplan/NA00002669'},
+  {id:'NA00005057',name:'T Tab 9',fee:9900,disc:7425,link:'https://www.tworld.co.kr/web/product/callplan/NA00005057'},
+  {id:'NA00000007',name:'뉴실버요금제',fee:9900,disc:7425,link:'https://www.tworld.co.kr/web/product/callplan/NA00000007'},
+  {id:'NA00003958',name:'3G Data함께쓰기Basic',fee:9900,disc:7425,link:'https://www.tworld.co.kr/web/product/callplan/NA00003958'},
+  {id:'NA00008075',name:'마이투넘버',fee:8800,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00008075'},
+  {id:'NA00006548',name:'태블릿 함께쓰기',fee:5000,disc:3750,link:'https://www.tworld.co.kr/web/product/callplan/NA00006548'},
+  {id:'NA00006547',name:'스마트폰 함께쓰기',fee:5000,disc:3750,link:'https://www.tworld.co.kr/web/product/callplan/NA00006547'},
+  {id:'NA00005912',name:'IoT 블랙박스 Basic',fee:1900,disc:null,link:'https://www.tworld.co.kr/web/product/callplan/NA00005912'},
+];
+
+let selectedPlanId = '';
+
+function planById(id) { return SKT_PLANS.find(p => p.id === id); }
+
+function renderPlanList() {
+  const listEl = document.getElementById('plan-list');
+  if (!listEl) return;
+  const q = (document.getElementById('plan-filter')?.value || '').trim().toLowerCase();
+  const items = q ? SKT_PLANS.filter(p => p.name.toLowerCase().includes(q)) : SKT_PLANS;
+  if (!items.length) {
+    listEl.innerHTML = '<div class="plan-empty">검색 결과가 없습니다</div>';
+  } else {
+    listEl.innerHTML = items.map(p => `
+      <div class="plan-item ${p.id===selectedPlanId?'selected':''}" onclick="selectPlan('${p.id}')">
+        <span class="plan-name">${p.name}</span>
+        <span class="plan-fee">${fmtK(p.fee)}원</span>
+      </div>`).join('');
+  }
+  const btn = document.getElementById('plan-detail-btn');
+  if (btn) btn.disabled = !selectedPlanId;
+  const infoEl = document.getElementById('plan-selected-info');
+  const p = planById(selectedPlanId);
+  if (infoEl) {
+    if (p) {
+      infoEl.style.display = 'block';
+      infoEl.innerHTML = `<strong>${p.name}</strong> 선택됨 · 월정액 ${fmtK(p.fee)}원${p.disc!=null?` · 선택약정 반영 ${fmtK(p.disc)}원`:''}`;
+    } else {
+      infoEl.style.display = 'none';
+    }
+  }
+}
+
+function selectPlan(id) {
+  selectedPlanId = id;
+  const p = planById(id);
+  if (p) {
+    const feeEl = document.getElementById('baseFee');
+    if (feeEl) feeEl.value = p.fee;
+  }
+  renderPlanList();
+  update();
+}
+
+function openPlanDetail() {
+  const p = planById(selectedPlanId);
+  if (p && p.link) window.open(p.link, '_blank', 'noopener');
+}
+
+// ═══════════════════════════════════
+// 할인 계산
+// ═══════════════════════════════════
+function onDiscToggle(prefix) {
+  const chk = document.getElementById(prefix+'Chk');
+  const pct = document.getElementById(prefix+'Pct');
+  if (pct) pct.disabled = !chk.checked;
+}
+
+function computeDiscountedFee(baseFee) {
+  let fee = baseFee;
+  if (document.getElementById('discSuntaek')?.checked) fee *= (1 - 0.25);
+  if (document.getElementById('discCombiChk')?.checked) {
+    const pct = parseFloat(document.getElementById('discCombiPct')?.value) || 0;
+    fee *= (1 - pct/100);
+  }
+  if (document.getElementById('discWelfareChk')?.checked) {
+    const pct = parseFloat(document.getElementById('discWelfarePct')?.value) || 0;
+    fee *= (1 - pct/100);
+  }
+  return Math.max(0, Math.round(fee));
+}
+
+// ─── 부가서비스 동적 관리 ───
+let addonList = [{name:'', fee:''}]; // [{name, fee}]
+
+function addAddonRow(idx) {
+  addonList.splice(idx+1, 0, {name:'', fee:''});
+  renderAddonList();
+  update();
+}
+
+function removeAddonRow(idx) {
+  if (addonList.length <= 1) {
+    addonList[0] = {name:'', fee:''};
+  } else {
+    addonList.splice(idx, 1);
+  }
+  renderAddonList();
+  update();
+}
+
+function renderAddonList() {
+  const container = document.getElementById('addon-list');
+  if (!container) return;
+  container.innerHTML = addonList.map((a, i) => `
+    <div class="addon-row">
+      <input type="text" value="${a.name}" placeholder="서비스명" oninput="addonList[${i}].name=this.value;update()">
+      <input type="number" value="${a.fee}" placeholder="요금" oninput="addonList[${i}].fee=this.value;update()">
+      <span style="font-size:10px;color:var(--text-muted);flex-shrink:0">원</span>
+      <button class="addon-btn addon-add" onclick="addAddonRow(${i})" title="줄 추가">+</button>
+      <button class="addon-btn addon-remove" onclick="removeAddonRow(${i})" title="줄 삭제">−</button>
+    </div>`).join('');
+}
+
+function getTotalAddonFee() {
+  return addonList.reduce((s, a) => s + (parseInt(a.fee) || 0), 0);
+}
+
+// ─── 다음 구입 월 드롭다운 업데이트 ───
+function updateNextBuyOptions() {
+  const buyYear  = parseInt(document.getElementById('buyYear').value)  || 2026;
+  const buyMonth = parseInt(document.getElementById('buyMonth').value) || 8;
+  const installMonths = parseInt(document.getElementById('installMonths').value) || 6;
+  const installPrincipal = parseInt(document.getElementById('installPrincipal').value) || 0;
+
+  // 할부 월 금액 표시
+  const monthlyAmt = installPrincipal > 0 ? Math.round(installPrincipal / installMonths) : 0;
+  const dispEl = document.getElementById('installMonthlyDisplay');
+  if (dispEl) dispEl.textContent = monthlyAmt > 0 ? `월 할부금: ${fmtK(monthlyAmt)}원` : '';
+
+  // 재구입 최소 기한: 구입월 + 6개월 이후 (= 구입월 + 7번째 달부터 가능)
+  // 할부 기간과 무관하게 구입 후 최소 6개월은 지나야 함
+  const minNextOffset = 7; // 구입월 + 7번째 달 (= 6개월 경과 후 다음달)
+
+  const sel = document.getElementById('nextBuyMonth');
+  if (!sel) return;
+
+  const opts = ['<option value="auto">자동 (할부 종료 다음달)</option>'];
+  // 최소 재구입 달: 구입월+minNextOffset
+  // 최대: 구입월+24까지 선택 가능 (합리적 범위)
+  for (let offset = minNextOffset; offset <= 24; offset++) {
+    let m = buyMonth + offset, y = buyYear;
+    while (m > 12) { m -= 12; y++; }
+    if (y >= 2031) break;
+    const label = `${y}년 ${m}월 (구입 후 ${offset}개월)`;
+    opts.push(`<option value="${y*100+m}">${label}</option>`);
+  }
+  sel.innerHTML = opts.join('');
+
+  // 정보 표시
+  const infoEl = document.getElementById('next-buy-info');
+  if (infoEl) {
+    let minM = buyMonth + minNextOffset, minY = buyYear;
+    while (minM > 12) { minM -= 12; minY++; }
+    infoEl.textContent = `최소 재구입 가능: ${minY}년 ${minM}월 (구입월+6개월 경과)`;
+    if (installMonths > 6) {
+      let overlapM = installMonths - 6;
+      infoEl.textContent += ` · 할부 ${installMonths}개월 → 재구입 시 ${overlapM}개월 할부 중복 발생`;
+    }
+  }
+}
+
+// ═══════════════════════════════════
+// 설정값 읽기
+// ═══════════════════════════════════
+function getSettings() {
+  const installPrincipal = parseInt(document.getElementById('installPrincipal').value) || 0;
+  const installMonths    = parseInt(document.getElementById('installMonths').value)    || 6;
+  const installMonthly   = installPrincipal > 0 ? Math.round(installPrincipal / installMonths) : 0;
+
+  // 다음 구입 키: 'auto' 또는 YYYYMM 정수
+  const nextBuyVal = document.getElementById('nextBuyMonth')?.value;
+  const nextBuyKey = (!nextBuyVal || nextBuyVal === 'auto') ? 'auto' : parseInt(nextBuyVal);
+
+  const baseFee = parseInt(document.getElementById('baseFee').value) || 0;
+  const discountedBaseFee = computeDiscountedFee(baseFee);
+
+  return {
+    limit:          parseInt(document.getElementById('limit').value)      || 297000,
+    baseFee,
+    discountedBaseFee,
+    addonFee:       getTotalAddonFee(),
+    installPrincipal,
+    installMonths,
+    installMonthly,
+    nextBuyKey,
+    buyYear:        parseInt(document.getElementById('buyYear').value)    || 2026,
+    buyMonth:       parseInt(document.getElementById('buyMonth').value)   || 8,
+    startOffset:    parseInt(document.getElementById('googleStartMonth').value) || 7,
+  };
+}
+
+// ═══════════════════════════════════
+// 구독 옵션 생성 (특정 key·슬롯 기준)
+// 같은 key에서 다른 슬롯이 선택한 항목 제외
+// ═══════════════════════════════════
+function buildSubOptions(key, si, currentSvcId) {
+  const taken = new Set(
+    [0,1,2,3].filter(x=>x!==si)
+           .map(x=>getCellState(key,x).svcId)
+           .filter(Boolean)
+  );
+  const cats = [...new Set(SVC_CATALOG.map(s=>s.cat))];
+  let html = '<option value="">— 없음 —</option>';
+  cats.forEach(cat => {
+    const items = SVC_CATALOG.filter(s=>s.cat===cat && !taken.has(s.id));
+    if (!items.length) return;
+    html += `<optgroup label="${cat}">`;
+    items.forEach(s => {
+      const sel = currentSvcId===s.id ? 'selected' : '';
+      const hint = s.annual>0 ? ` (연${fmtK(s.annual)}·월${fmtK(s.monthly)})` : ' (무료)';
+      html += `<option value="${s.id}" ${sel}>${s.name}${hint}</option>`;
+    });
+    html += '</optgroup>';
+  });
+  return html;
+}
+
+// ═══════════════════════════════════
+// 핵심 계산: buildTimeline
+// 셀별 독립 방식
+// ═══════════════════════════════════
+function buildTimeline() {
+  const s = getSettings();
+
+  // YYYYMM 키 연산
+  function addM(key, n) {
+    let y=Math.floor(key/100), m=(key%100)+n;
+    while(m>12){m-=12;y++;} while(m<1){m+=12;y--;}
+    return y*100+m;
+  }
+  function inRange(key) { return Math.floor(key/100)>=2026 && Math.floor(key/100)<2031; }
+
+  // 재구입 최소 기한: 구입월 + 6개월
+  const minNextOffset = 6; // 6개월 경과 후 = 구입월+7번째 달부터
+
+  // ── 1. 단말 사이클 맵 구성 ──
+  // 각 구입 기기 = { buyKey, installMonths, installMonthly }
+  // deviceMap[key] = { installAmount, label }  (해당 달에 청구되는 할부 합산)
+  const deviceMap = {};   // key → { installAmount:합산, labels:[], isBuyMonth:bool }
+  const freeDaySet = new Set(); // 할부 0원 달 기록
+  let isBuyFreeDay = false;
+
+  function addDevice(buyKey, months, monthly) {
+    // 구입달~(구입달+months-1) 동안 할부 발생
+    for (let i = 0; i < months; i++) {
+      const k = addM(buyKey, i);
+      if (!inRange(k)) break;
+      if (!deviceMap[k]) deviceMap[k] = { installAmount:0, labels:[], isBuyMonth: i===0 };
+      deviceMap[k].installAmount += monthly;
+      deviceMap[k].labels.push(i===0 ? `구입·할부①` : `할부${i+1}`);
+      if (i===0) deviceMap[k].isBuyMonth = true;
+    }
+  }
+
+  // 첫 번째 기기
+  const firstBuyKey = s.buyYear * 100 + s.buyMonth;
+  addDevice(firstBuyKey, s.installMonths, s.installMonthly);
+
+  // 다음 구입 키 결정
+  // 재구입 최소 = firstBuyKey + 6 (최소 6개월 경과 후)
+  let nextBuyKey;
+  const minNext = addM(firstBuyKey, minNextOffset + 1); // 7번째 달부터 가능
+
+  if (s.nextBuyKey === 'auto') {
+    // 자동: 할부 종료 다음달 (installMonths개월 후)
+    nextBuyKey = addM(firstBuyKey, s.installMonths);
+  } else {
+    nextBuyKey = Math.max(s.nextBuyKey, minNext);
+  }
+
+  // 두 번째 이후 기기들 (2026~2030년 범위)
+  let curBuyKey = nextBuyKey;
+  for (let iter = 0; iter < 20 && inRange(curBuyKey); iter++) {
+    addDevice(curBuyKey, s.installMonths, s.installMonthly);
+    // 다음 구입은 현재 구입월 + 재구입 간격
+    let gap;
+    if (s.nextBuyKey === 'auto') {
+      gap = s.installMonths; // 자동: 할부 종료 다음달
+    } else {
+      // 사용자가 지정한 간격 = 첫구입→두번째 간격과 동일하게 반복
+      gap = Math.round((nextBuyKey - firstBuyKey) / 100) * 12 +
+            ((nextBuyKey % 100) - (firstBuyKey % 100));
+      if (gap <= 0) gap = s.installMonths;
+    }
+    // 최소 6개월 보장
+    gap = Math.max(gap, minNextOffset + 1);
+    curBuyKey = addM(curBuyKey, gap);
+  }
+
+  // 단말 0원 달: deviceMap에 없는 달 (할부가 전혀 없는 달)
+  // — 여기서는 "이전 구입 그룹의 모든 할부가 끝났고 다음 구입 전인 달"
+  // 단순화: deviceMap에 없는 달 = 단말 비용 없음 (0원 달)
+  // "free" 표시는 직전에 할부가 있었다가 없어진 달로 판단
+  const allInstallKeys = new Set(Object.keys(deviceMap).map(Number));
+
+  // ── 2. 청구요금 (할인 후 기본요금 + 부가서비스) ──
+  const billFee = s.discountedBaseFee + s.addonFee;
+  const feeDisplayEl = document.getElementById('discountedFeeDisplay');
+  if (feeDisplayEl) feeDisplayEl.textContent = fmtK(s.discountedBaseFee)+'원';
+
+  // ── 3. 전체 날짜 목록 생성 ──
+  const allKeys = [];
+  const startM2 = s.buyYear===2026 ? Math.min(s.startOffset, s.buyMonth) : 1;
+  for(let y=2026;y<=2030;y++){
+    const sm=(y===2026)?startM2:1;
+    for(let m=sm;m<=12;m++) allKeys.push(y*100+m);
+  }
+
+  // ── 4. 슬롯별 "계산된 상태" 맵 구성 ──
+  const slotCalc = {};
+  allKeys.forEach(k => { slotCalc[k] = [
+    {type:'free',svc:null,cost:0,isBridge:false,upgradeInfo:null},
+    {type:'free',svc:null,cost:0,isBridge:false,upgradeInfo:null},
+    {type:'free',svc:null,cost:0,isBridge:false,upgradeInfo:null},
+    {type:'free',svc:null,cost:0,isBridge:false,upgradeInfo:null}
+  ]; });
+
+  for(let si=0;si<4;si++){
+    let inPeriodUntil  = null;
+    let inPeriodSvc    = null;
+    let annualStartKey = null;
+    let prevAnnualExpired = false;
+    let pendingUpgrade = null;
+
+    for(let ki=0;ki<allKeys.length;ki++){
+      const key = allKeys[ki];
+      const dm  = deviceMap[key];
+      const hasInstall = dm && dm.installAmount > 0;
+
+      if (inPeriodUntil !== null && key < inPeriodUntil) {
+        if (pendingUpgrade && pendingUpgrade.upgradeKey === key) {
+          const fromSvc = inPeriodSvc;
+          const toSvc   = svcById(pendingUpgrade.upgradeToId);
+          if (fromSvc && toSvc && toSvc.annual > fromSvc.annual) {
+            const startY=Math.floor(annualStartKey/100), startMo=annualStartKey%100;
+            const curY=Math.floor(key/100), curMo=key%100;
+            const usedMo = (curY-startY)*12 + (curMo-startMo);
+            const remainMo = 12 - usedMo;
+            const creditAmt = Math.round(fromSvc.annual * remainMo / 12);
+            const extraPay  = Math.max(0, toSvc.annual - creditAmt);
+            slotCalc[key][si] = { type:'in_period_upgrade', svc:toSvc, cost:extraPay, isBridge:false,
+              upgradeInfo:{ fromSvc, toSvc, remainMo, creditAmt, extraPay } };
+            annualStartKey = key;
+            inPeriodUntil  = addM(key, 12);
+            inPeriodSvc    = toSvc;
+            pendingUpgrade = null;
+            const newCs = getCellState(key, si);
+            if (newCs.upgradeKey && newCs.upgradeToId)
+              pendingUpgrade = { upgradeKey: newCs.upgradeKey, upgradeToId: newCs.upgradeToId };
+            continue;
+          }
+        }
+        slotCalc[key][si] = { type:'in_period', svc:inPeriodSvc, cost:0, isBridge:false, upgradeInfo:null };
+        continue;
+      }
+      if (inPeriodUntil !== null && key >= inPeriodUntil) {
+        prevAnnualExpired = true;
+        inPeriodUntil = null; inPeriodSvc = null; annualStartKey = null; pendingUpgrade = null;
+      }
+      const cs  = getCellState(key, si);
+      const svc = cs.svcId ? svcById(cs.svcId) : null;
+      const isBridgeHint = prevAnnualExpired && hasInstall;
+      if (!svc) {
+        slotCalc[key][si] = { type:'free', svc:null, cost:0, isBridge:isBridgeHint, upgradeInfo:null };
+      } else if (cs.mode==='annual') {
+        const cost = svc.annual || 0;
+        slotCalc[key][si] = { type:'annual_pay', svc, cost, isBridge:isBridgeHint, upgradeInfo:null };
+        annualStartKey = key;
+        inPeriodUntil  = addM(key, 12);
+        inPeriodSvc    = svc;
+        prevAnnualExpired = false;
+        pendingUpgrade = (cs.upgradeKey && cs.upgradeToId)
+          ? { upgradeKey: cs.upgradeKey, upgradeToId: cs.upgradeToId } : null;
+      } else {
+        const cost = svc.monthly || 0;
+        slotCalc[key][si] = { type:'monthly', svc, cost, isBridge:isBridgeHint, upgradeInfo:null };
+      }
+    }
+  }
+
+  // ── 5. 월별 행 생성 ──
+  const rows = [];
+  for(let ki=0;ki<allKeys.length;ki++){
+    const key = allKeys[ki];
+    const y=Math.floor(key/100), m=key%100;
+    const dm = deviceMap[key];
+    const installAmount = dm ? dm.installAmount : 0;
+    const isBuyMonth    = dm ? dm.isBuyMonth    : false;
+    const installLabel  = dm ? dm.labels.join('+') : '—';
+    const isFreeDay     = !dm || installAmount === 0; // 할부 없는 달
+
+    const slots  = slotCalc[key];
+    const slotCost = slots.reduce((s,sl)=>s+sl.cost,0);
+    const total = billFee + installAmount + slotCost;
+    const remainder = s.limit - total;
+
+    rows.push({ key, year:y, month:m,
+      installAmount, installLabel, isBuyMonth, isFreeDay,
+      slots, slotCost,
+      billFee, addonFee:s.addonFee,
+      total, remainder });
+  }
+  return rows;
+}
+
+// ═══════════════════════════════════
+// 테이블 렌더링
+// ═══════════════════════════════════
+function renderTable(rows) {
+  const tbody = document.getElementById('timeline-body');
+  let html='', prevYear=null, totalCost=0, overMonths=0;
+
+  rows.forEach(r => {
+    if(r.year!==prevYear){html+=`<tr class="year-divider"><td colspan="10">${r.year}년</td></tr>`;prevYear=r.year;}
+
+    const isFree = r.isFreeDay;
+    const hasBridge = r.slots.some(sl=>sl.isBridge && sl.type!=='in_period');
+    let rowClass='';
+    if(r.remainder<0)      rowClass='row-over';
+    else if(isFree)        rowClass='row-free';
+    else if(hasBridge)     rowClass='row-bridge';
+
+    // 월 셀
+    let monthCell=`${r.month}월`;
+    if(r.isBuyMonth)       monthCell+=` <span class="badge b-buy">구입</span>`;
+    if(isFree)             monthCell+=` <span class="badge b-free">단말 0원</span>`;
+    if(hasBridge)          monthCell+=` <span class="badge b-bridge">브릿지</span>`;
+
+    // 단말 셀 (중복 할부 지원)
+    const singleMonthly = Math.round((parseInt(document.getElementById('installPrincipal')?.value)||0) / (parseInt(document.getElementById('installMonths')?.value)||6));
+    const isDouble = r.installAmount > singleMonthly && singleMonthly > 0;
+    const deviceCell = r.installAmount > 0
+      ? `<span style="font-size:10px;line-height:1.5">${r.installLabel}</span><br><span style="font-size:10px;color:${isDouble?'var(--red)':'var(--text-muted)'}">${isDouble?'⚠ 중복 ':''} ${fmtK(r.installAmount)}원</span>`
+      : '—';
+
+    // 슬롯 셀 렌더링 함수
+    function renderSlotCell(si) {
+      const sl = r.slots[si];
+      const key = r.key;
+      const cs = getCellState(key, si);
+
+      // 연간 유효기간 중 업그레이드 실행 달
+      if (sl.type === 'in_period_upgrade') {
+        const ui = sl.upgradeInfo;
+        // 취소 시 연간 시작 달(startKey)을 역탐색해서 업그레이드 설정 제거
+        const startKey = findAnnualStart(key, si) || key;
+        return `<td class="sub-cell c">
+          <span style="display:inline-block;font-size:9px;font-weight:600;padding:1px 5px;border-radius:3px;background:#fff3cd;color:#856404;border:.5px solid #ffc107;margin-bottom:2px">🔼 업그레이드</span>
+          <div style="font-size:10px;font-weight:600;color:var(--text)">${ui.fromSvc.name} → ${ui.toSvc.name}</div>
+          <div style="font-size:10px;color:var(--text-muted)">크레딧 -${fmtK(ui.creditAmt)}원</div>
+          <div style="font-size:10px;font-weight:600;color:${ui.extraPay>0?'var(--amber)':'var(--green)'}">추가결제 ${ui.extraPay>0?fmtK(ui.extraPay)+'원':'0원'}</div>
+          <button onclick="onCancelUpgrade(${startKey},${si})" style="margin-top:2px;padding:1px 5px;font-size:9px;border:.5px solid var(--border-strong);border-radius:3px;cursor:pointer;background:var(--surface);color:var(--text-muted)">취소</button>
+        </td>`;
+      }
+
+      // 유효기간 중: Google One이면 업그레이드 버튼, 아니면 서비스명만
+      if (sl.type === 'in_period') {
+        const annualCs = findAnnualStartState(key, si); // 연간 시작 달의 cellState
+        const upgradeOpts = isGoogleSvc(sl.svc.id) ? googleUpgradeOptions(sl.svc.id) : [];
+        const hasUpgradeSetting = annualCs && annualCs.upgradeKey === key;
+        if (upgradeOpts.length > 0) {
+          return `<td class="sub-cell c" id="upgrade-popup-${key}-${si}">
+            <span class="sub-active-ann">${sl.svc.name}</span>
+            <div class="sub-cost">유효기간</div>
+            ${!hasUpgradeSetting ? `<button onclick="onSetUpgrade(${key},${si})" style="margin-top:3px;padding:1px 6px;font-size:9px;border:.5px solid #ffc107;border-radius:3px;cursor:pointer;background:#fff3cd;color:#856404;font-weight:600">🔼 업그레이드 설정</button>` : ''}
+          </td>`;
+        }
+        return `<td class="sub-cell c">
+          <span class="sub-active-ann">${sl.svc.name}</span>
+          <div class="sub-cost">유효기간</div>
+        </td>`;
+      }
+
+      // 드롭다운 표시 달: annual_pay / monthly / free (브릿지 힌트 포함 모두)
+      const curSvcId = cs.svcId || '';
+      const curMode  = cs.mode  || 'annual';
+      const opts = buildSubOptions(key, si, curSvcId);
+      const svc  = sl.svc;
+      const costText = sl.type==='annual_pay'
+        ? fmtK(sl.cost)+'원'
+        : sl.type==='monthly' && svc
+        ? fmtK(sl.cost)+'원/월'
+        : '';
+      const bridgeHint = sl.isBridge
+        ? `<div style="font-size:9px;color:var(--purple);font-weight:600;margin-bottom:2px">⚡ 브릿지 구간</div>`
+        : '';
+
+      return `<td class="sub-cell c">
+        ${bridgeHint}
+        <select class="sub-drop" onchange="onCellSvcChange(${key},${si},this.value)">
+          ${opts}
+        </select>
+        ${curSvcId ? `
+        <div class="sub-type-row">
+          <button class="sub-type-btn ${curMode==='annual'?'active-ann':''}"
+            onclick="onCellModeChange(${key},${si},'annual')">연간</button>
+          <button class="sub-type-btn ${curMode==='monthly'?'active-mon':''}"
+            onclick="onCellModeChange(${key},${si},'monthly')">월간</button>
+        </div>
+        <span class="sub-cost">${costText}</span>` : ''}
+      </td>`;
+    }
+
+    // 잔여금 색상
+    let remClass='surplus';
+    if(r.remainder>=150000) remClass='surplus-high';
+    else if(r.remainder<20000&&r.remainder>=0) remClass='tight';
+    else if(r.remainder<0) remClass='over';
+
+    totalCost += r.slotCost;
+    if(r.remainder<0) overMonths++;
+
+    html += `<tr class="${rowClass}">
+      <td>${monthCell}</td>
+      <td>${r.billFee > 0 ? fmtK(r.billFee) : '—'}</td>
+      <td>${r.addonFee > 0 ? fmtK(r.addonFee) : '—'}</td>
+      <td class="c">${deviceCell}</td>
+      ${renderSlotCell(0)}
+      ${renderSlotCell(1)}
+      ${renderSlotCell(2)}
+      ${renderSlotCell(3)}
+      <td style="font-weight:600">${fmtK(r.total)}</td>
+      <td class="${remClass}">${r.remainder>=0?'+':''}${r.remainder<0?'-':''}${fmt(r.remainder)}</td>
+    </tr>`;
+  });
+
+  tbody.innerHTML = html;
+
+  // 요약
+  document.getElementById('totalCost').textContent = fmtK(totalCost)+'원';
+  // 절약액: 동일 서비스 모두 월간으로만 결제했을 때와 비교
+  let monthlyOnly = 0;
+  rows.forEach(r => {
+    r.slots.forEach(sl => {
+      if (sl.type==='annual_pay') monthlyOnly += (sl.svc.monthly||0);
+      else if(sl.type==='monthly') monthlyOnly += sl.cost;
+    });
+  });
+  const saving = monthlyOnly - totalCost;
+  document.getElementById('savings').textContent = (saving>=0?'+':'')+fmtK(saving)+'원';
+  document.getElementById('savings').className = 'stat-value '+(saving>=0?'green':'red');
+  document.getElementById('overCount').textContent = overMonths+'달';
+  document.getElementById('overCount').className = 'stat-value '+(overMonths===0?'green':'red');
+}
+
+// ═══════════════════════════════════
+// JSON 저장 / 불러오기
+// ═══════════════════════════════════
+function collectSettings() {
+  return {
+    limit:            document.getElementById('limit')?.value,
+    baseFee:          document.getElementById('baseFee')?.value,
+    selectedPlanId,
+    discSuntaek:      document.getElementById('discSuntaek')?.checked,
+    discCombiChk:     document.getElementById('discCombiChk')?.checked,
+    discCombiPct:     document.getElementById('discCombiPct')?.value,
+    discWelfareChk:   document.getElementById('discWelfareChk')?.checked,
+    discWelfarePct:   document.getElementById('discWelfarePct')?.value,
+    addonList:        JSON.stringify(addonList),
+    installPrincipal: document.getElementById('installPrincipal')?.value,
+    installMonths:    document.getElementById('installMonths')?.value,
+    buyYear:          document.getElementById('buyYear')?.value,
+    buyMonth:         document.getElementById('buyMonth')?.value,
+    nextBuyMonth:     document.getElementById('nextBuyMonth')?.value,
+    startOffset:      document.getElementById('googleStartMonth')?.value,
+  };
+}
+
+function applySettings(cfg) {
+  const set = (id, val) => { const el=document.getElementById(id); if(el&&val!=null) el.value=val; };
+  const setChk = (id, val) => { const el=document.getElementById(id); if(el&&val!=null) el.checked=!!val; };
+  set('limit', cfg.limit);
+  set('baseFee', cfg.baseFee);
+  selectedPlanId = cfg.selectedPlanId || '';
+  renderPlanList();
+  setChk('discSuntaek', cfg.discSuntaek);
+  setChk('discCombiChk', cfg.discCombiChk);
+  set('discCombiPct', cfg.discCombiPct);
+  setChk('discWelfareChk', cfg.discWelfareChk);
+  set('discWelfarePct', cfg.discWelfarePct);
+  onDiscToggle('discCombi');
+  onDiscToggle('discWelfare');
+  if (cfg.addonList) {
+    try { addonList = JSON.parse(cfg.addonList); } catch(e) {}
+    renderAddonList();
+  }
+  set('installPrincipal', cfg.installPrincipal);
+  set('installMonths', cfg.installMonths);
+  set('buyYear', cfg.buyYear);
+  set('buyMonth', cfg.buyMonth);
+  set('googleStartMonth', cfg.startOffset);
+  updateNextBuyOptions();
+  if (cfg.nextBuyMonth) set('nextBuyMonth', cfg.nextBuyMonth);
+}
+
+function saveToJson() {
+  const data = {
+    version: 1,
+    savedAt: new Date().toISOString(),
+    settings: collectSettings(),
+    cellState: cellState,
+  };
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const now  = new Date();
+  const ts   = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+  a.href     = url;
+  a.download = `구독플래너_${ts}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  const st = document.getElementById('save-status');
+  if (st) { st.textContent = `✓ 저장 완료 (${ts})`; setTimeout(()=>{st.textContent='';}, 3000); }
+}
+
+function loadFromJson(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.version || !data.settings || !data.cellState) throw new Error('형식 오류');
+      // cellState 복원
+      Object.keys(cellState).forEach(k => delete cellState[k]);
+      Object.entries(data.cellState).forEach(([k, v]) => { cellState[parseInt(k)] = v; });
+      // 설정값 복원
+      applySettings(data.settings);
+      update();
+      const st = document.getElementById('save-status');
+      const savedAt = data.savedAt ? new Date(data.savedAt).toLocaleString('ko-KR') : '알 수 없음';
+      if (st) { st.textContent = `✓ 불러오기 완료 (저장: ${savedAt})`; setTimeout(()=>{st.textContent='';}, 4000); }
+    } catch(err) {
+      alert('파일을 읽을 수 없습니다. 올바른 구독플래너 JSON 파일인지 확인해주세요.\n(' + err.message + ')');
+    }
+    event.target.value = ''; // 같은 파일 재선택 가능하도록 초기화
+  };
+  reader.readAsText(file);
+}
+
+// ─── 셀별 이벤트 핸들러 ───
+function onCellSvcChange(key, si, svcId) {
+  setCellState(key, si, { svcId, mode: getCellState(key,si).mode||'annual', upgradeKey:null, upgradeToId:'' });
+  update();
+}
+function onCellModeChange(key, si, mode) {
+  setCellState(key, si, { mode });
+  update();
+}
+
+// ── Google One 업그레이드 핸들러 ──
+// "업그레이드 설정" 버튼 클릭 → 인라인 팝업 렌더링
+function onSetUpgrade(upgradeKey, si) {
+  // 해당 슬롯의 연간 시작 달(annualStartKey) 찾기
+  const startKey = findAnnualStart(upgradeKey, si);
+  if (!startKey) return;
+  const startCs = getCellState(startKey, si);
+  const fromSvc = svcById(startCs.svcId);
+  if (!fromSvc) return;
+  const opts = googleUpgradeOptions(startCs.svcId);
+
+  // 업그레이드 팝업 셀을 임시 div로 교체
+  const cellId = `upgrade-popup-${upgradeKey}-${si}`;
+  const el = document.getElementById(cellId);
+  if (!el) return;
+
+  let optsHtml = opts.map(s => {
+    const startY=Math.floor(startKey/100), startMo=startKey%100;
+    const upY=Math.floor(upgradeKey/100), upMo=upgradeKey%100;
+    const usedMo = (upY-startY)*12+(upMo-startMo);
+    const remainMo = 12-usedMo;
+    const credit = Math.round(fromSvc.annual * remainMo / 12);
+    const extra  = Math.max(0, s.annual - credit);
+    return `<option value="${s.id}">${s.name} — 추가결제 ${extra>0?fmtK(extra)+'원':'0원'} (크레딧 ${fmtK(credit)}원)</option>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div style="font-size:9px;font-weight:600;color:#856404;margin-bottom:3px">🔼 업그레이드 설정</div>
+    <div style="font-size:9px;color:var(--text-muted);margin-bottom:3px">${fromSvc.name} 연간 중 ${upgradeKey%100}월에 업그레이드</div>
+    <select id="upg-sel-${upgradeKey}-${si}" style="width:100%;padding:2px 4px;font-size:9px;border:.5px solid var(--border-strong);border-radius:3px;background:var(--surface);color:var(--text);margin-bottom:3px">
+      <option value="">-- 상위 요금제 선택 --</option>
+      ${optsHtml}
+    </select>
+    <div style="display:flex;gap:3px">
+      <button onclick="onConfirmUpgrade(${startKey},${upgradeKey},${si})" style="flex:1;padding:2px 4px;font-size:9px;border:.5px solid #ffc107;border-radius:3px;cursor:pointer;background:#fff3cd;color:#856404;font-weight:600">확인</button>
+      <button onclick="update()" style="flex:1;padding:2px 4px;font-size:9px;border:.5px solid var(--border-strong);border-radius:3px;cursor:pointer;background:var(--surface);color:var(--text-muted)">취소</button>
+    </div>`;
+}
+
+function onConfirmUpgrade(startKey, upgradeKey, si) {
+  const selEl = document.getElementById(`upg-sel-${upgradeKey}-${si}`);
+  if (!selEl || !selEl.value) return;
+  // 연간 시작 달의 cellState에 upgradeKey와 upgradeToId 저장
+  setCellState(startKey, si, { upgradeKey, upgradeToId: selEl.value });
+  update();
+}
+
+function onCancelUpgrade(startKey, si) {
+  setCellState(startKey, si, { upgradeKey: null, upgradeToId: '' });
+  update();
+}
+
+// 연간 시작 달 찾기 (특정 in_period 달에서 역방향 탐색)
+function findAnnualStart(inPeriodKey, si) {
+  // inPeriodKey에서 최대 11달 전까지 역탐색, annual_pay 타입 찾기
+  // 빌드된 slotCalc를 직접 쓸 수 없으므로 cellState에서 추론
+  // 연간 결제는 12달 구간이므로 최대 11달 전까지 탐색
+  let y=Math.floor(inPeriodKey/100), m=inPeriodKey%100;
+  for(let i=1;i<=11;i++){
+    m--; if(m<1){m=12;y--;}
+    const k=y*100+m;
+    const cs=getCellState(k,si);
+    if(cs.svcId && cs.mode==='annual') return k;
+  }
+  return null;
+}
+
+// in_period 달에서 해당 슬롯의 연간 시작 cellState 반환
+function findAnnualStartState(inPeriodKey, si) {
+  const startKey = findAnnualStart(inPeriodKey, si);
+  if (!startKey) return null;
+  return getCellState(startKey, si);
+}
+
+// 구 핸들러 호환
+function onSlotSvcChange(si, svcId) {}
+function onSlotModeChange(si, mode) {}
+
+// ─── 전체 업데이트 ───
+function update() {
+  try {
+    const rows = buildTimeline();
+    renderTable(rows);
+  } catch(e) { console.error('업데이트 오류:',e); }
+}
+
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ═══════════════════════════════════
+
+// ─── 초기화 ───
+document.addEventListener('DOMContentLoaded',()=>{
+  renderAddonList();
+  renderServicesList();
+  renderPlanList();
+  updateNextBuyOptions();
+  update();
+  ['limit','baseFee','installPrincipal'].forEach(id=>{
+    document.getElementById(id)?.addEventListener('input', ()=>{ updateNextBuyOptions(); update(); });
+  });
+  document.getElementById('installMonths')?.addEventListener('change', ()=>{ updateNextBuyOptions(); update(); });
+  ['buyYear','buyMonth'].forEach(id=>{
+    document.getElementById(id)?.addEventListener('change', ()=>{ updateNextBuyOptions(); update(); });
+  });
+  document.getElementById('nextBuyMonth')?.addEventListener('change', update);
+  document.getElementById('googleStartMonth')?.addEventListener('change', update);
+});
+</script>
+</body>
+</html>
