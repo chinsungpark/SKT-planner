@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>주택 재산세 계산기 (작년 vs 올해)</title>
+<style>
+  :root{
+    --bg:#f4f6f9;
+    --card:#ffffff;
+    --border:#e2e6ec;
+    --text:#1f2530;
+    --muted:#6b7280;
+    --accent:#2f5fda;
+    --accent-soft:#eaf0ff;
+    --up:#d64545;
+    --down:#2b7a4b;
+    --warn:#8a5a00;
+    --warn-bg:#fff6e5;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.5;
+    padding:24px;
+  }
+  .wrap{max-width:1080px;margin:0 auto;}
+  h1{font-size:22px;margin:0 0 4px;}
+  .subtitle{color:var(--muted);font-size:13px;margin-bottom:20px;}
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:20px 22px;
+    margin-bottom:18px;
+  }
+  .card h2{font-size:15px;margin:0 0 14px;display:flex;align-items:center;gap:8px;}
+  .card h2 .num{
+    width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;
+    font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .year-grid{
+    display:grid;
+    grid-template-columns:140px repeat(2,1fr);
+    gap:10px 16px;
+    align-items:center;
+  }
+  .year-grid .col-head{
+    font-weight:700;font-size:13px;color:var(--accent);
+    padding-bottom:6px;border-bottom:2px solid var(--accent-soft);
+  }
+  .year-grid .row-label{font-size:13px;color:var(--muted);}
+  .field-hint{font-size:11px;color:var(--muted);margin-top:2px;}
+  input[type="text"], input[type="number"]{
+    width:100%;
+    padding:9px 10px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    font-size:14px;
+    text-align:right;
+    background:#fbfcfe;
+  }
+  input[type="text"]:focus, input[type="number"]:focus{
+    outline:2px solid var(--accent);outline-offset:1px;background:#fff;
+  }
+  .checkbox-row{display:flex;align-items:center;gap:8px;justify-content:flex-end;}
+  .checkbox-row label{font-size:13px;cursor:pointer;}
+  .checkbox-row input{width:17px;height:17px;cursor:pointer;}
+  .opt-row{display:flex;flex-wrap:wrap;gap:18px;align-items:center;}
+  .opt-item{display:flex;align-items:center;gap:6px;font-size:13px;}
+  .opt-item input{width:16px;height:16px;}
+  details{border:1px solid var(--border);border-radius:8px;padding:10px 14px;background:#fbfcfe;}
+  details summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--accent);}
+  .adv-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;margin-top:12px;}
+  .adv-item label{display:block;font-size:12px;color:var(--muted);margin-bottom:3px;}
+  .adv-item input{text-align:right;}
+
+  table.result{width:100%;border-collapse:collapse;font-size:14px;}
+  table.result th, table.result td{padding:9px 10px;border-bottom:1px solid var(--border);text-align:right;}
+  table.result th:first-child, table.result td:first-child{text-align:left;color:var(--muted);font-weight:500;}
+  table.result thead th{color:var(--muted);font-size:12px;font-weight:600;border-bottom:2px solid var(--border);}
+  table.result tr.total td{font-weight:700;font-size:15px;border-top:2px solid var(--text);border-bottom:none;}
+  table.result td.diff-up{color:var(--up);font-weight:600;}
+  table.result td.diff-down{color:var(--down);font-weight:600;}
+  table.result tr.sub td{color:var(--muted);font-size:12.5px;}
+
+  .headline{
+    display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px;
+  }
+  .headline .box{background:var(--accent-soft);border-radius:10px;padding:14px 16px;}
+  .headline .box .label{font-size:12px;color:var(--muted);margin-bottom:4px;}
+  .headline .box .value{font-size:20px;font-weight:800;}
+  .headline .box.mid{background:#f1f2f5;}
+  .headline .box .value.up{color:var(--up);}
+  .headline .box .value.down{color:var(--down);}
+
+  .step-block{margin-bottom:14px;}
+  .step-block h3{font-size:13px;margin:0 0 6px;color:var(--accent);}
+  .step-list{list-style:none;margin:0;padding:0;font-size:12.5px;}
+  .step-list li{padding:4px 0;border-bottom:1px dashed var(--border);display:flex;justify-content:space-between;gap:10px;}
+  .step-list li:last-child{border-bottom:none;}
+  .step-list .k{color:var(--muted);}
+  .step-list .v{font-variant-numeric:tabular-nums;}
+  .flag{display:inline-block;font-size:10.5px;background:var(--warn-bg);color:var(--warn);padding:1px 6px;border-radius:10px;margin-left:6px;}
+
+  .note{background:var(--warn-bg);border:1px solid #f0dca6;color:var(--warn);border-radius:10px;padding:12px 14px;font-size:12.5px;}
+  .note ul{margin:6px 0 0;padding-left:18px;}
+  .law-ref{font-size:11.5px;color:var(--muted);margin-top:6px;}
+
+  @media (max-width:720px){
+    .year-grid{grid-template-columns:1fr 1fr;}
+    .year-grid .row-label{grid-column:1 / -1;font-weight:700;color:var(--text);border-top:1px solid var(--border);padding-top:8px;margin-top:2px;}
+    .headline{grid-template-columns:1fr;}
+    .adv-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>주택 재산세 계산기 — 작년 vs 올해 비교</h1>
+  <div class="subtitle">공동주택 공시가격을 입력하면 지방세법에 따라 재산세(주택)·도시지역분·지방교육세·지역자원시설세를 연도별로 계산해 비교합니다. 모든 계산은 이 브라우저 안에서만 이루어지며 어떤 데이터도 외부로 전송되지 않습니다.</div>
+
+  <!-- 1. 기준연도 -->
+  <div class="card">
+    <h2><span class="num">1</span>기준연도</h2>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <label style="font-size:13px;color:var(--muted);">올해(기준연도)</label>
+      <input type="number" id="baseYear" value="2026" style="width:100px;text-align:left;">
+      <span id="yearLabelHint" class="field-hint"></span>
+    </div>
+  </div>
+
+  <!-- 2. 공시가격 -->
+  <div class="card">
+    <h2><span class="num">2</span>공동주택 공시가격</h2>
+    <div class="year-grid" id="gongsigaGrid">
+      <div></div>
+      <div class="col-head" id="headPrev2">재작년</div>
+      <div class="col-head" id="headPrev2b">　</div>
+      <div class="row-label">공시가격(원)</div>
+      <div><input type="text" id="gsY2" class="won-input" placeholder="예: 458,000,000"></div>
+      <div></div>
+    </div>
+    <div class="field-hint" style="margin-top:8px;">재작년 공시가격은 작년분 세금의 "과세표준상한액" 계산(전전년도 대비 증가율 5% 상한)에만 쓰입니다. 모르면 비워둬도 계산은 되지만 과세표준상한이 적용되지 않아 실제보다 다소 높게 나올 수 있습니다.</div>
+  </div>
+
+  <!-- 3. 작년/올해 입력 -->
+  <div class="card">
+    <h2><span class="num">3</span>작년 · 올해 입력</h2>
+    <div class="year-grid">
+      <div></div>
+      <div class="col-head" id="headPrev">작년</div>
+      <div class="col-head" id="headCurr">올해</div>
+
+      <div class="row-label">공동주택 공시가격(원)</div>
+      <div><input type="text" id="gsPrev" class="won-input" placeholder="예: 494,000,000"></div>
+      <div><input type="text" id="gsCurr" class="won-input" placeholder="예: 503,000,000"></div>
+
+      <div class="row-label">1가구 2주택 이상 여부<div class="field-hint">과세기준일(6.1) 현재 세대 기준</div></div>
+      <div class="checkbox-row"><input type="checkbox" id="multiPrev"><label for="multiPrev">2주택 이상</label></div>
+      <div class="checkbox-row"><input type="checkbox" id="multiCurr"><label for="multiCurr">2주택 이상</label></div>
+
+      <div class="row-label">건물분 시가표준액(원)<div class="field-hint">지역자원시설세용, 선택입력</div></div>
+      <div><input type="text" id="bldPrev" class="won-input" placeholder="모르면 비워두세요"></div>
+      <div><input type="text" id="bldCurr" class="won-input" placeholder="모르면 비워두세요"></div>
+
+      <div class="row-label">세부담상한 경감액(연간, 원)<div class="field-hint">고지서에 나온 실제 경감액을 아는 경우만 입력</div></div>
+      <div><input type="text" id="creditPrev" class="won-input" placeholder="모르면 비워두세요"></div>
+      <div><input type="text" id="creditCurr" class="won-input" placeholder="모르면 비워두세요"></div>
+
+      <div class="row-label">도시지역분 과세대상 지역</div>
+      <div class="checkbox-row"><input type="checkbox" id="urbanPrev" checked><label for="urbanPrev">해당</label></div>
+      <div class="checkbox-row"><input type="checkbox" id="urbanCurr" checked><label for="urbanCurr">해당</label></div>
+    </div>
+  </div>
+
+  <!-- 4. 옵션 -->
+  <div class="card">
+    <h2><span class="num">4</span>계산 옵션</h2>
+    <div class="opt-row">
+      <div class="opt-item"><input type="checkbox" id="truncTen" checked><label for="truncTen">10원 미만 절사(고지서 방식)</label></div>
+      <div class="opt-item"><input type="checkbox" id="showSteps" checked><label for="showSteps">계산 과정 상세 표시</label></div>
+    </div>
+    <details style="margin-top:14px;">
+      <summary>고급 설정 (공정시장가액비율 · 세율 등 — 법령 개정 시 직접 수정)</summary>
+      <div class="adv-grid">
+        <div class="adv-item"><label>1주택 특례 공정시장가액비율 — 3억 이하(%)</label><input type="number" id="advR1" value="43" step="0.1"></div>
+        <div class="adv-item"><label>1주택 특례 공정시장가액비율 — 3~6억(%)</label><input type="number" id="advR2" value="44" step="0.1"></div>
+        <div class="adv-item"><label>1주택 특례 공정시장가액비율 — 6억 초과(%)</label><input type="number" id="advR3" value="45" step="0.1"></div>
+        <div class="adv-item"><label>일반(다주택) 공정시장가액비율(%)</label><input type="number" id="advRGeneral" value="60" step="0.1"></div>
+        <div class="adv-item"><label>1주택 세율특례 적용 공시가격 상한(억원)</label><input type="number" id="advRateCap" value="9" step="0.1"></div>
+        <div class="adv-item"><label>과세표준상한 연간 증가율(%)</label><input type="number" id="advCapGrowth" value="5" step="0.1"></div>
+        <div class="adv-item"><label>도시지역분 세율(%)</label><input type="number" id="advUrban" value="0.14" step="0.01"></div>
+        <div class="adv-item"><label>지방교육세율(재산세의 %)</label><input type="number" id="advEdu" value="20" step="0.1"></div>
+      </div>
+    </details>
+  </div>
+
+  <!-- 5. 결과 -->
+  <div class="card">
+    <h2><span class="num">5</span>계산 결과</h2>
+    <div class="headline">
+      <div class="box"><div class="label" id="headlinePrevLabel">작년 연간 합계</div><div class="value" id="hlPrev">-</div></div>
+      <div class="box"><div class="label" id="headlineCurrLabel">올해 연간 합계</div><div class="value" id="hlCurr">-</div></div>
+      <div class="box mid"><div class="label">증감</div><div class="value" id="hlDiff">-</div></div>
+    </div>
+
+    <table class="result">
+      <thead>
+        <tr><th>항목</th><th id="thPrev">작년</th><th id="thCurr">올해</th><th>증감</th></tr>
+      </thead>
+      <tbody id="resultBody"></tbody>
+    </table>
+  </div>
+
+  <!-- 6. 계산 과정 -->
+  <div class="card" id="stepsCard">
+    <h2><span class="num">6</span>계산 과정 상세</h2>
+    <div id="stepsBody" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;"></div>
+  </div>
+
+  <div class="note">
+    <strong>참고 / 한계사항</strong>
+    <ul>
+      <li>세부담상한(지방세법 제122조)의 "직전연도 세액 상당액"은 시행령 제118조에 따라 주택 수·비율 변동을 반영해 재계산하는 값이라, 실제 고지서와 정확히 일치하지 않을 수 있습니다. 위 "전년도 재산세 본세" 입력값을 기준으로 근사 계산합니다.</li>
+      <li>도시지역분에도 별도의 세부담상한이 적용될 수 있어 고지서 금액과 차이가 날 수 있습니다.</li>
+      <li>지역자원시설세는 건물분 시가표준액을 입력한 경우에만 계산됩니다(화재위험건축물 등 가산 제외).</li>
+      <li>이 계산기는 참고용이며, 실제 납부세액은 관할 지자체 고지서를 기준으로 합니다.</li>
+    </ul>
+    <div class="law-ref">근거: 지방세법 제104조~제154조(재산세), 제110조(과세표준상한), 제111조·제111조의2(세율), 제114조(과세기준일), 제122조(세부담상한), 지방세법 시행령 제109조·제118조</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+
+  // ---- 원화 입력 콤마 포맷 ----
+  document.querySelectorAll('.won-input').forEach(inp=>{
+    inp.addEventListener('blur', ()=>{
+      const n = parseWon(inp.value);
+      inp.value = n ? n.toLocaleString('ko-KR') : '';
+    });
+    inp.addEventListener('focus', ()=>{
+      const n = parseWon(inp.value);
+      inp.value = n || '';
+    });
+    inp.addEventListener('input', calculate);
+  });
+  function parseWon(v){
+    if(!v) return 0;
+    const n = parseInt(String(v).replace(/[^0-9-]/g,''),10);
+    return isNaN(n)?0:n;
+  }
+
+  document.querySelectorAll('input[type=checkbox], input[type=number]').forEach(el=>{
+    el.addEventListener('input', calculate);
+    el.addEventListener('change', calculate);
+  });
+
+  function won(n){ return Math.round(n).toLocaleString('ko-KR') + '원'; }
+
+  function applyTrunc(n, trunc){
+    return trunc ? Math.floor(n/10)*10 : Math.round(n);
+  }
+
+  // ---- 세율 브라켓 ----
+  function standardTax(base){
+    if(base<=60_000_000) return base*0.001;
+    if(base<=150_000_000) return 60_000 + (base-60_000_000)*0.0015;
+    if(base<=300_000_000) return 195_000 + (base-150_000_000)*0.0025;
+    return 570_000 + (base-300_000_000)*0.004;
+  }
+  function specialTax(base){
+    if(base<=60_000_000) return base*0.0005;
+    if(base<=150_000_000) return 30_000 + (base-60_000_000)*0.001;
+    if(base<=300_000_000) return 120_000 + (base-150_000_000)*0.002;
+    return 420_000 + (base-300_000_000)*0.0035;
+  }
+  function fireFacilityTax(v){
+    if(!v) return 0;
+    if(v<=6_000_000) return v*0.0004;
+    if(v<=13_000_000) return 2_400 + (v-6_000_000)*0.0005;
+    if(v<=26_000_000) return 5_900 + (v-13_000_000)*0.0006;
+    if(v<=39_000_000) return 13_700 + (v-26_000_000)*0.0008;
+    if(v<=64_000_000) return 24_100 + (v-39_000_000)*0.001;
+    return 49_100 + (v-64_000_000)*0.0012;
+  }
+  function burdenCapRatio(gongsiga){
+    if(gongsiga<=300_000_000) return 1.05;
+    if(gongsiga<=600_000_000) return 1.10;
+    return 1.30;
+  }
+
+  function fairMarketRatio(gongsiga, isMulti, cfg){
+    if(isMulti) return cfg.rGeneral;
+    if(gongsiga<=300_000_000) return cfg.r1;
+    if(gongsiga<=600_000_000) return cfg.r2;
+    return cfg.r3;
+  }
+
+  function getConfig(){
+    return {
+      r1: parseFloat($('advR1').value||43)/100,
+      r2: parseFloat($('advR2').value||44)/100,
+      r3: parseFloat($('advR3').value||45)/100,
+      rGeneral: parseFloat($('advRGeneral').value||60)/100,
+      rateCap: parseFloat($('advRateCap').value||9)*100_000_000,
+      capGrowth: parseFloat($('advCapGrowth').value||5)/100,
+      urbanRate: parseFloat($('advUrban').value||0.14)/100,
+      eduRate: parseFloat($('advEdu').value||20)/100,
+    };
+  }
+
+  // 한 해의 재산세 계산
+  function computeYear({gongsiga, prevGongsiga, isMulti, buildingValue, burdenCredit, urban}, cfg, trunc){
+    const steps = [];
+    const ratio = fairMarketRatio(gongsiga, isMulti, cfg);
+    steps.push(['공정시장가액비율', (ratio*100).toFixed(1)+'%' + (isMulti?' (2주택 이상 → 일반)':' (1세대1주택 특례)')]);
+
+    const rawBase = gongsiga * ratio;
+    steps.push(['산출 과세표준', won(rawBase) + ' = 공시가격 × 비율']);
+
+    let base = rawBase;
+    let capApplied = false;
+    if(prevGongsiga>0){
+      const prevEquiv = prevGongsiga * ratio;
+      const capBase = prevEquiv + rawBase*cfg.capGrowth;
+      steps.push(['직전연도 과세표준 상당액', won(prevEquiv) + ' (직전연도 공시가격 × 당해연도 비율)']);
+      steps.push(['과세표준상한액', won(capBase)]);
+      if(rawBase > capBase){ base = capBase; capApplied = true; }
+    } else {
+      steps.push(['과세표준상한제', '재작년 공시가격 미입력 → 상한 미적용']);
+    }
+    steps.push(['적용 과세표준', won(base) + (capApplied?' <span class="flag">상한 적용됨</span>':'')]);
+
+    const useSpecialRate = !isMulti && gongsiga <= cfg.rateCap;
+    const rawTax = useSpecialRate ? specialTax(base) : standardTax(base);
+    steps.push(['세율 구간', useSpecialRate ? '1세대1주택 특례세율' : '표준세율']);
+    steps.push(['재산세 산출세액(연간, 상한 전)', won(rawTax)]);
+
+    const capRatio = burdenCapRatio(gongsiga);
+    let finalTax = rawTax;
+    const burdenApplied = burdenCredit > 0;
+    if(burdenApplied){
+      finalTax = Math.max(0, rawTax - burdenCredit);
+      steps.push(['세부담상한 경감액(입력값)', won(burdenCredit) + ' (공시가 구간 상한율 ' + (capRatio*100).toFixed(0) + '% 참고)']);
+    } else {
+      steps.push(['세부담상한', '경감액 미입력 → 상한 미적용, 아래 금액은 "상한 적용 전" 산출세액(실제보다 같거나 높을 수 있음)']);
+    }
+    steps.push(['재산세 납부할세액(연간)', won(finalTax) + (burdenApplied?' <span class="flag">경감액 반영됨</span>':' <span class="flag">상한 적용 전</span>')]);
+
+    const urbanTax = urban ? base * cfg.urbanRate : 0;
+    const eduTax = finalTax * cfg.eduRate;
+    const fireTax = fireFacilityTax(buildingValue);
+
+    const totalAnnual = finalTax + urbanTax + eduTax + fireTax;
+
+    return {
+      ratio, base, rawTax, finalTax,
+      urbanTax: applyTrunc(urbanTax, trunc),
+      eduTax: applyTrunc(eduTax, trunc),
+      fireTax: applyTrunc(fireTax, trunc),
+      propertyTax: applyTrunc(finalTax, trunc),
+      totalAnnual: applyTrunc(totalAnnual, trunc),
+      capApplied, burdenApplied, useSpecialRate,
+      steps
+    };
+  }
+
+  function diffCell(prev, curr){
+    const d = curr - prev;
+    const pct = prev !== 0 ? (d/prev*100) : (curr>0 ? 100 : 0);
+    const cls = d>0 ? 'diff-up' : (d<0 ? 'diff-down' : '');
+    const sign = d>0 ? '+' : '';
+    return `<td class="${cls}">${sign}${Math.round(d).toLocaleString('ko-KR')}원 (${sign}${pct.toFixed(1)}%)</td>`;
+  }
+
+  function calculate(){
+    const baseYear = parseInt($('baseYear').value,10) || 2026;
+    $('headPrev2').textContent = (baseYear-2)+'년';
+    $('headPrev').textContent = (baseYear-1)+'년';
+    $('headCurr').textContent = baseYear+'년';
+    $('thPrev').textContent = (baseYear-1)+'년';
+    $('thCurr').textContent = baseYear+'년';
+    $('headlinePrevLabel').textContent = (baseYear-1)+'년 연간 합계';
+    $('headlineCurrLabel').textContent = baseYear+'년 연간 합계';
+    $('yearLabelHint').textContent = `→ 작년 ${baseYear-1}년 / 재작년 ${baseYear-2}년 기준으로 라벨이 표시됩니다.`;
+
+    const cfg = getConfig();
+    const trunc = $('truncTen').checked;
+
+    const gsY2 = parseWon($('gsY2').value);
+    const gsPrev = parseWon($('gsPrev').value);
+    const gsCurr = parseWon($('gsCurr').value);
+
+    if(!gsPrev || !gsCurr){
+      $('resultBody').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px;">작년·올해 공시가격을 입력하면 결과가 표시됩니다.</td></tr>';
+      $('hlPrev').textContent='-'; $('hlCurr').textContent='-'; $('hlDiff').textContent='-';
+      $('stepsBody').innerHTML='';
+      return;
+    }
+
+    const prevResult = computeYear({
+      gongsiga: gsPrev,
+      prevGongsiga: gsY2,
+      isMulti: $('multiPrev').checked,
+      buildingValue: parseWon($('bldPrev').value),
+      burdenCredit: parseWon($('creditPrev').value),
+      urban: $('urbanPrev').checked
+    }, cfg, trunc);
+
+    const currResult = computeYear({
+      gongsiga: gsCurr,
+      prevGongsiga: gsPrev,
+      isMulti: $('multiCurr').checked,
+      buildingValue: parseWon($('bldCurr').value),
+      burdenCredit: parseWon($('creditCurr').value),
+      urban: $('urbanCurr').checked
+    }, cfg, trunc);
+
+    // headline
+    $('hlPrev').textContent = won(prevResult.totalAnnual);
+    $('hlCurr').textContent = won(currResult.totalAnnual);
+    const diff = currResult.totalAnnual - prevResult.totalAnnual;
+    const pct = prevResult.totalAnnual !== 0 ? (diff/prevResult.totalAnnual*100) : 0;
+    const diffEl = $('hlDiff');
+    diffEl.textContent = (diff>0?'+':'') + Math.round(diff).toLocaleString('ko-KR') + '원 (' + (diff>0?'+':'') + pct.toFixed(1) + '%)';
+    diffEl.className = 'value ' + (diff>0?'up':(diff<0?'down':''));
+
+    // table
+    const rows = [
+      ['적용 과세표준', prevResult.base, currResult.base],
+      ['재산세(주택)', prevResult.propertyTax, currResult.propertyTax],
+      ['도시지역분', prevResult.urbanTax, currResult.urbanTax],
+      ['지역자원시설세', prevResult.fireTax, currResult.fireTax],
+      ['지방교육세', prevResult.eduTax, currResult.eduTax],
+    ];
+    let html = '';
+    rows.forEach(([label, p, c])=>{
+      html += `<tr><td>${label}</td><td>${Math.round(p).toLocaleString('ko-KR')}원</td><td>${Math.round(c).toLocaleString('ko-KR')}원</td>${diffCell(p,c)}</tr>`;
+    });
+    html += `<tr class="total"><td>연간 합계</td><td>${Math.round(prevResult.totalAnnual).toLocaleString('ko-KR')}원</td><td>${Math.round(currResult.totalAnnual).toLocaleString('ko-KR')}원</td>${diffCell(prevResult.totalAnnual, currResult.totalAnnual)}</tr>`;
+
+    const prevHalfNote = prevResult.totalAnnual <= 200000 ? '20만원 이하 → 7월 일괄 부과' : '1기(7월)/2기(9월) 각 1/2';
+    const currHalfNote = currResult.totalAnnual <= 200000 ? '20만원 이하 → 7월 일괄 부과' : '1기(7월)/2기(9월) 각 1/2';
+    html += `<tr class="sub"><td>부과 방식</td><td colspan="1">${prevHalfNote}</td><td colspan="1">${currHalfNote}</td><td></td></tr>`;
+    if(prevResult.totalAnnual > 200000 || currResult.totalAnnual > 200000){
+      html += `<tr class="sub"><td>1기분(7월) 예상액</td><td>${Math.round(prevResult.totalAnnual/2).toLocaleString('ko-KR')}원</td><td>${Math.round(currResult.totalAnnual/2).toLocaleString('ko-KR')}원</td><td></td></tr>`;
+    }
+    $('resultBody').innerHTML = html;
+
+    // steps
+    if($('showSteps').checked){
+      $('stepsCard').style.display='';
+      $('stepsBody').innerHTML =
+        renderSteps((baseYear-1)+'년 (작년)', prevResult) +
+        renderSteps(baseYear+'년 (올해)', currResult);
+    } else {
+      $('stepsCard').style.display='none';
+    }
+  }
+
+  function renderSteps(title, r){
+    let li = r.steps.map(([k,v])=>`<li><span class="k">${k}</span><span class="v">${v}</span></li>`).join('');
+    return `<div class="step-block"><h3>${title}</h3><ul class="step-list">${li}</ul></div>`;
+  }
+
+  calculate();
+})();
+</script>
+</body>
+</html>
