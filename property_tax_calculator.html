@@ -244,10 +244,6 @@
       const n = parseWon(inp.value);
       inp.value = n ? n.toLocaleString('ko-KR') : '';
     });
-    inp.addEventListener('focus', ()=>{
-      const n = parseWon(inp.value);
-      inp.value = n || '';
-    });
     inp.addEventListener('input', calculate);
   });
   function parseWon(v){
