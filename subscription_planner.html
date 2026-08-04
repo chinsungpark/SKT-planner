@@ -232,6 +232,28 @@
       text-align: center
     }
 
+    .import-btn {
+      width: 100%;
+      padding: 8px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--purple);
+      color: #fff
+    }
+
+    .import-btn:hover {
+      background: #47307d
+    }
+
+    .import-btn:disabled {
+      background: var(--surface2);
+      color: var(--text-muted);
+      cursor: not-allowed
+    }
+
     /* 탭 */
     .tabs {
       display: flex;
@@ -1111,32 +1133,12 @@
                 id="limit" value="297,000" oninput="formatNumberInput(this);markDirty()"><span
                 class="input-unit">원</span></div>
             <div class="divider"></div>
-            <div class="setting-label">단말 할부 조건</div>
-            <div class="input-row"><label>할부 원금</label><input type="text" inputmode="numeric" class="money-input"
-                id="installPrincipal" value="" placeholder="0"
-                oninput="formatNumberInput(this);updateNextBuyOptions();markDirty()"><span class="input-unit">원</span>
-            </div>
-            <div class="select-row" style="margin-bottom:0">
-              <label style="font-size:12px;color:var(--text-sub)">할부 개월</label>
-              <select id="installMonths" class="sel" onchange="updateNextBuyOptions();markDirty()">
-                <option value="6" selected>6개월</option>
-                <option value="10">10개월</option>
-                <option value="12">12개월</option>
-                <option value="18">18개월</option>
-                <option value="24">24개월</option>
-              </select>
-            </div>
-            <div id="installMonthlyDisplay"
-              style="font-size:11px;color:var(--text-muted);margin-top:5px;text-align:right"></div>
-            <div class="divider"></div>
-            <div class="setting-label">스마트폰 구입 일정</div>
-            <div class="select-row"><label>첫 구입일</label>
-              <input type="date" id="buyDate" class="sel" value="2026-08-01"
-                onchange="updateNextBuyOptions();markDirty()">
-            </div>
-            <div style="font-size:10px;color:var(--text-muted);margin-top:-3px;line-height:1.5">구입월에는 할부금을 일할 계산해 청구하고,
-              부족분은 할부 종료 다음 달에 추가로 청구합니다. 다음 구입은 자동으로 할부 종료 다음 달(최소 구입월+6개월 경과 후)로 계산됩니다.</div>
-            <div id="next-buy-info" style="font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.5"></div>
+            <div class="setting-label">단말 할부금</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px;line-height:1.5">자산관리 시스템에 기록된 실제
+              단말기 할부(원금+이자) 데이터를 그대로 가져와 표에 반영합니다. 데이터가 없는 미래 달은 0원으로 표시됩니다.</div>
+            <button class="import-btn" onclick="importDeviceSchedule()">🔄 자산관리 시스템에서 단말 할부금 가져오기</button>
+            <div id="device-import-status" style="font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.5">아직
+              가져온 데이터가 없습니다.</div>
           </div>
         </div>
 
@@ -1231,7 +1233,6 @@
                   <tr>
                     <th style="text-align:left">월</th>
                     <th>청구요금</th>
-                    <th>부가서비스</th>
                     <th class="c">단말</th>
                     <th class="c sub-cell">구독 1</th>
                     <th class="c sub-cell">구독 2</th>
@@ -1258,7 +1259,10 @@
                 📂 JSON 불러오기
                 <input type="file" accept=".json" onchange="loadFromJson(event)" style="display:none">
               </label>
+              <button class="export-btn" onclick="serverSave()" style="background:var(--accent)">☁️ 서버 저장</button>
+              <button class="export-btn" onclick="serverLoad()" style="background:var(--accent)">☁️ 서버 불러오기</button>
               <span id="save-status" style="font-size:11px;color:var(--text-muted)"></span>
+              <span id="server-sync-status" style="font-size:11px;color:var(--text-muted)"></span>
             </div>
           </div>
 
@@ -1438,6 +1442,7 @@
       { id: 'ps_del', name: 'PS Plus 디럭스', cat: '🎮 게임', annual: 171000, monthly: 21000, color: '#1070c8' },
       { id: 'nintendo', name: '닌텐도 스위치 온라인', cat: '🎮 게임', annual: 48000, monthly: 0, color: '#e60012' },
       { id: 'apple_arc', name: '애플 아케이드', cat: '🎮 게임', annual: 78000, monthly: 6500, color: '#0071e3' },
+      { id: 'ps_charge', name: 'PS충전(직접입력)', cat: '🎮 게임', annual: 0, monthly: 0, color: '#003791', isCustom: true },
     ];
 
     // ── 셀별 독립 구독 상태 ──
@@ -1448,19 +1453,19 @@
 
     function getCellState(key, si) {
       if (!cellState[key]) cellState[key] = [
-        { svcId: '', mode: 'annual', upgradeKey: null, upgradeToId: '' },
-        { svcId: '', mode: 'annual', upgradeKey: null, upgradeToId: '' },
-        { svcId: '', mode: 'annual', upgradeKey: null, upgradeToId: '' },
-        { svcId: '', mode: 'annual', upgradeKey: null, upgradeToId: '' }
+        { svcId: '', mode: 'annual', upgradeKey: null, upgradeToId: '', customAmount: '' },
+        { svcId: '', mode: 'annual', upgradeKey: null, upgradeToId: '', customAmount: '' },
+        { svcId: '', mode: 'annual', upgradeKey: null, upgradeToId: '', customAmount: '' },
+        { svcId: '', mode: 'annual', upgradeKey: null, upgradeToId: '', customAmount: '' }
       ];
       return cellState[key][si];
     }
     function setCellState(key, si, patch) {
       if (!cellState[key]) cellState[key] = [
-        { svcId: '', mode: 'annual', upgradeKey: null, upgradeToId: '' },
-        { svcId: '', mode: 'annual', upgradeKey: null, upgradeToId: '' },
-        { svcId: '', mode: 'annual', upgradeKey: null, upgradeToId: '' },
-        { svcId: '', mode: 'annual', upgradeKey: null, upgradeToId: '' }
+        { svcId: '', mode: 'annual', upgradeKey: null, upgradeToId: '', customAmount: '' },
+        { svcId: '', mode: 'annual', upgradeKey: null, upgradeToId: '', customAmount: '' },
+        { svcId: '', mode: 'annual', upgradeKey: null, upgradeToId: '', customAmount: '' },
+        { svcId: '', mode: 'annual', upgradeKey: null, upgradeToId: '', customAmount: '' }
       ];
       Object.assign(cellState[key][si], patch);
     }
@@ -1994,43 +1999,87 @@
       return addonList.reduce((s, a) => s + (parseInt(a.fee) || 0), 0);
     }
 
-    // ─── 첫 구입일(연/월/일) 파싱 ───
-    function getBuyDateParts() {
-      const val = document.getElementById('buyDate')?.value || '2026-08-01';
-      const [y, m, d] = val.split('-').map(Number);
-      return { year: y || 2026, month: m || 8, day: d || 1 };
+    // ═══════════════════════════════════
+    // 단말 할부금 — 자산관리 시스템(cspark.netlify.app)에서 가져오기
+    // ═══════════════════════════════════
+    // 자산관리 시스템의 devices[] 구조:
+    //   { model, date:'YYYY-MM-DD', months, schedule:[{principal,interest}, ...] }
+    //   schedule[i]는 구입월(i=0)부터 순서대로의 월별 실제 청구 원금·이자
+    // 이걸 "달력 월(YYYYMM) → 그 달 단말 청구액" 맵으로 펼쳐서 deviceScheduleMap에 저장한다.
+    // 데이터가 없는 달은 0원(=단말 청구 없음)으로 취급되며, 별도 예측/계산을 하지 않는다.
+    const ASSET_SYSTEM_URL = 'https://cspark.netlify.app/.netlify/functions/stock';
+    let deviceScheduleMap = {}; // { YYYYMM: { installAmount, labels:[], isBuyMonth, deviceIds:Set } }
+    let deviceImportMeta = null; // { importedAt, deviceCount, monthCount }
+
+    function buildDeviceScheduleFromDevices(devices) {
+      const map = {};
+      (devices || []).forEach((dev, di) => {
+        if (!dev.date || !Array.isArray(dev.schedule)) return;
+        const start = new Date(dev.date);
+        if (isNaN(start.getTime())) return;
+        dev.schedule.forEach((row, i) => {
+          const amt = (parseInt(row.principal) || 0) + (parseInt(row.interest) || 0);
+          if (amt <= 0) return;
+          const d = new Date(start.getFullYear(), start.getMonth() + i, 1);
+          const key = d.getFullYear() * 100 + (d.getMonth() + 1);
+          if (!map[key]) map[key] = { installAmount: 0, labels: [], isBuyMonth: false, deviceIds: new Set() };
+          map[key].installAmount += amt;
+          map[key].labels.push(`${dev.model || '단말'} ${i === 0 ? '구입' : '할부' + (i + 1)}`);
+          map[key].deviceIds.add(di);
+          if (i === 0) map[key].isBuyMonth = true;
+        });
+      });
+      return map;
     }
 
-    // 다음 구입까지의 개월수(재구입 간격) 계산
-    // - 할부 6개월: 최소 재구입 기한(구입월+6개월 경과)을 채우려면 7개월째부터 가능하고,
-    //   일할 계산으로 못 걷은 잔액은 별도의 7번째 달에 청구된다.
-    // - 할부 10개월 이상: 이미 6개월 최소 기한을 넘기므로 할부 개월수가 지나면 바로 재구입 가능하며,
-    //   남은 잔액은 다음 스마트폰의 일할 계산분과 합산되어 그 달에 함께 청구된다.
-    function computeBuyGap(installMonths) {
-      const minNextOffset = 7; // 최소 재구입 기한: 구입월+6개월 경과 후(=7번째 달)부터
-      return installMonths >= 10 ? Math.max(installMonths, minNextOffset) : Math.max(installMonths + 1, minNextOffset);
+    // deviceScheduleMap은 Set을 포함해 JSON으로 바로 저장할 수 없으므로 배열로 변환해서 오간다.
+    function serializeDeviceSchedule() {
+      const out = {};
+      Object.entries(deviceScheduleMap).forEach(([k, v]) => {
+        out[k] = { installAmount: v.installAmount, labels: v.labels, isBuyMonth: v.isBuyMonth, deviceIds: Array.from(v.deviceIds) };
+      });
+      return out;
+    }
+    function deserializeDeviceSchedule(obj) {
+      const map = {};
+      Object.entries(obj || {}).forEach(([k, v]) => {
+        map[k] = { installAmount: v.installAmount || 0, labels: v.labels || [], isBuyMonth: !!v.isBuyMonth, deviceIds: new Set(v.deviceIds || []) };
+      });
+      return map;
     }
 
-    // ─── 할부 월 금액 / 다음 구입(자동) 안내 표시 ───
-    function updateNextBuyOptions() {
-      const { year: buyYear, month: buyMonth } = getBuyDateParts();
-      const installMonths = parseInt(document.getElementById('installMonths').value) || 6;
-      const installPrincipal = numVal('installPrincipal');
+    function renderDeviceImportStatus() {
+      const el = document.getElementById('device-import-status');
+      if (!el) return;
+      if (!deviceImportMeta) { el.textContent = '아직 가져온 데이터가 없습니다.'; return; }
+      const t = deviceImportMeta.importedAt;
+      const ts = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')} ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
+      el.textContent = `마지막 가져오기: ${ts} · 기기 ${deviceImportMeta.deviceCount}대 · ${deviceImportMeta.monthCount}개월 데이터`;
+    }
 
-      // 할부 월 금액 표시
-      const monthlyAmt = installPrincipal > 0 ? Math.round(installPrincipal / installMonths) : 0;
-      const dispEl = document.getElementById('installMonthlyDisplay');
-      if (dispEl) dispEl.textContent = monthlyAmt > 0 ? `월 할부금: ${fmtK(monthlyAmt)}원` : '';
-
-      const buyGap = computeBuyGap(installMonths);
-      const infoEl = document.getElementById('next-buy-info');
-      if (infoEl) {
-        let nextM = buyMonth + buyGap, nextY = buyYear;
-        while (nextM > 12) { nextM -= 12; nextY++; }
-        const note = installMonths >= 10
-          ? '할부 종료와 동시에 재구입, 잔여 할부금은 다음 기기 일할분과 합산 청구'
-          : `할부 ${installMonths}개월 청구 + 잔액 정산 다음 달`;
-        infoEl.textContent = `다음 구입 예정: ${nextY}년 ${nextM}월 1일 (${note}, 자동)`;
+    async function importDeviceSchedule() {
+      const btn = document.querySelector('.import-btn');
+      const statusEl = document.getElementById('device-import-status');
+      if (btn) btn.disabled = true;
+      if (statusEl) statusEl.textContent = '가져오는 중...';
+      try {
+        const res = await fetch(ASSET_SYSTEM_URL, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'load' })
+        });
+        const json = await res.json();
+        if (!json.success) throw new Error(json.message || '불러오기 실패');
+        const devices = json.data?.phoneData?.devices;
+        if (!devices || !devices.length) throw new Error('자산관리 시스템에 저장된 단말기 정보가 없습니다.');
+        deviceScheduleMap = buildDeviceScheduleFromDevices(devices);
+        deviceImportMeta = { importedAt: new Date(), deviceCount: devices.length, monthCount: Object.keys(deviceScheduleMap).length };
+        renderDeviceImportStatus();
+        update();
+      } catch (e) {
+        if (statusEl) statusEl.textContent = '가져오기 실패: ' + e.message;
+        alert('단말 할부금을 가져오지 못했습니다.\n' + e.message);
+      } finally {
+        if (btn) btn.disabled = false;
       }
     }
 
@@ -2038,24 +2087,14 @@
     // 설정값 읽기
     // ═══════════════════════════════════
     function getSettings() {
-      const installPrincipal = numVal('installPrincipal');
-      const installMonths = parseInt(document.getElementById('installMonths').value) || 6;
-      const installMonthly = installPrincipal > 0 ? Math.round(installPrincipal / installMonths) : 0;
-
       const baseFee = numVal('baseFee');
       const discountedBaseFee = computeDiscountedFee(baseFee);
-      const { year: buyYear, month: buyMonth, day: buyDay } = getBuyDateParts();
 
       return {
         limit: numVal('limit') || 297000,
         baseFee,
         discountedBaseFee,
         addonFee: getTotalAddonFee(),
-        installPrincipal,
-        installMonths,
-        installMonthly,
-        buyYear, buyMonth, buyDay,
-        startOffset: 7, // 표시 시작 월: 구입월 기준 최대 7개월 전부터
       };
     }
 
@@ -2077,7 +2116,7 @@
         html += `<optgroup label="${cat}">`;
         items.forEach(s => {
           const sel = currentSvcId === s.id ? 'selected' : '';
-          const hint = s.annual > 0 ? ` (연${fmtK(s.annual)}·월${fmtK(s.monthly)})` : ' (무료)';
+          const hint = s.isCustom ? ' (직접 입력)' : (s.annual > 0 ? ` (연${fmtK(s.annual)}·월${fmtK(s.monthly)})` : ' (무료)');
           html += `<option value="${s.id}" ${sel}>${s.name}${hint}</option>`;
         });
         html += '</optgroup>';
@@ -2100,68 +2139,21 @@
       }
       function inRange(key) { return Math.floor(key / 100) >= 2026 && Math.floor(key / 100) < 2031; }
 
-      // ── 1. 단말 사이클 맵 구성 ──
-      // 각 구입 기기 = { buyKey, installMonths, installMonthly }
-      // deviceMap[key] = { installAmount, label }  (해당 달에 청구되는 할부 합산)
-      const deviceMap = {};   // key → { installAmount:합산, labels:[], isBuyMonth:bool, deviceIds:Set }
-      const freeDaySet = new Set(); // 할부 0원 달 기록
-      let isBuyFreeDay = false;
+      // ── 1. 단말 할부 맵 ──
+      // "자산관리 시스템에서 가져오기" 버튼으로 채워진 deviceScheduleMap을 그대로 사용한다.
+      // 이 앱은 더 이상 할부금을 계산하지 않는다 — 데이터가 없는 달은 그냥 0원(단말 비용 없음)이다.
+      const deviceMap = deviceScheduleMap;
 
-      // 구입일(day)이 월 중간이면 구입월은 30일 기준 일할 계산하고,
-      // 못 걷은 차액은 할부 종료 다음 달(월 개월수+1번째 달)에 추가로 청구한다.
-      // 예: 120만원/12개월(월 10만원)을 1월10일에 구입 → 1월 6.67만원(=10만원×20/30), 2~12월 10만원, 다음해 1월 3.33만원
-      function addDevice(buyKey, months, monthly, day, deviceId) {
-        const factor = Math.max(0, Math.min(1, (30 - day) / 30));
-        const firstAmt = Math.round(monthly * factor);
-        const extraAmt = monthly - firstAmt;
-
-        function touch(k, amount, label, isBuy) {
-          if (!inRange(k) || amount <= 0) return;
-          if (!deviceMap[k]) deviceMap[k] = { installAmount: 0, labels: [], isBuyMonth: false, deviceIds: new Set() };
-          deviceMap[k].installAmount += amount;
-          deviceMap[k].labels.push(label);
-          deviceMap[k].deviceIds.add(deviceId);
-          if (isBuy) deviceMap[k].isBuyMonth = true;
-        }
-
-        touch(buyKey, firstAmt, '구입(일할)·할부①', true);
-        for (let i = 1; i < months; i++) touch(addM(buyKey, i), monthly, `할부${i + 1}`, false);
-        touch(addM(buyKey, months), extraAmt, '할부잔액', false);
-      }
-
-      // 첫 번째 기기
-      const firstBuyKey = s.buyYear * 100 + s.buyMonth;
-      addDevice(firstBuyKey, s.installMonths, s.installMonthly, s.buyDay, 'device0');
-
-      // 다음 구입 키 결정 (할부 6개월: 잔액 정산 다음 달부터 / 10개월 이상: 할부 종료와 동시에,
-      // 남은 잔액은 다음 기기의 일할 계산분과 같은 달에 합산 청구된다)
-      const buyGap = computeBuyGap(s.installMonths);
-      let nextBuyKey = addM(firstBuyKey, buyGap);
-
-      // 두 번째 이후 기기들 (2026~2030년 범위)
-      let curBuyKey = nextBuyKey;
-      for (let iter = 0; iter < 20 && inRange(curBuyKey); iter++) {
-        addDevice(curBuyKey, s.installMonths, s.installMonthly, s.buyDay, 'device' + (iter + 1));
-        curBuyKey = addM(curBuyKey, buyGap);
-      }
-
-      // 단말 0원 달: deviceMap에 없는 달 (할부가 전혀 없는 달)
-      // — 여기서는 "이전 구입 그룹의 모든 할부가 끝났고 다음 구입 전인 달"
-      // 단순화: deviceMap에 없는 달 = 단말 비용 없음 (0원 달)
-      // "free" 표시는 직전에 할부가 있었다가 없어진 달로 판단
-      const allInstallKeys = new Set(Object.keys(deviceMap).map(Number));
-
-      // ── 2. 청구요금 (할인 후 기본요금 + T우주 결합상품 + 부가서비스) ──
-      const tujuFee = getTujuFee();
-      const billFee = s.discountedBaseFee + tujuFee + s.addonFee;
+      // ── 2. 청구요금 (할인 후 기본요금 + 부가서비스) ──
+      // T우주 결합상품(OTT) 이용금액은 통신비가 아니라 별도 신용카드로 결제되므로 청구요금에 포함하지 않는다.
+      // (T우주 계산기 자체는 참고용으로 계속 동작하며, tujuFee는 이 합계 계산에 관여하지 않는다.)
+      const billFee = s.discountedBaseFee + s.addonFee;
       refreshFeePreview();
 
-      // ── 3. 전체 날짜 목록 생성 ──
+      // ── 3. 전체 날짜 목록 생성 (2026년 1월 ~ 2030년 12월) ──
       const allKeys = [];
-      const startM2 = s.buyYear === 2026 ? Math.min(s.startOffset, s.buyMonth) : 1;
       for (let y = 2026; y <= 2030; y++) {
-        const sm = (y === 2026) ? startM2 : 1;
-        for (let m = sm; m <= 12; m++) allKeys.push(y * 100 + m);
+        for (let m = 1; m <= 12; m++) allKeys.push(y * 100 + m);
       }
 
       // ── 4. 슬롯별 "계산된 상태" 맵 구성 ──
@@ -2224,6 +2216,10 @@
           const isBridgeHint = prevAnnualExpired && hasInstall;
           if (!svc) {
             slotCalc[key][si] = { type: 'free', svc: null, cost: 0, isBridge: isBridgeHint, upgradeInfo: null };
+          } else if (svc.isCustom) {
+            // 직접 입력형 서비스(PS충전 등): 연간 잠금 없이 매달 독립적으로 금액을 입력받는다.
+            const cost = parseInt(cs.customAmount) || 0;
+            slotCalc[key][si] = { type: 'custom', svc, cost, isBridge: isBridgeHint, upgradeInfo: null };
           } else if (cs.mode === 'annual') {
             const cost = svc.annual || 0;
             slotCalc[key][si] = { type: 'annual_pay', svc, cost, isBridge: isBridgeHint, upgradeInfo: null };
@@ -2276,7 +2272,7 @@
       let html = '', prevYear = null;
 
       rows.forEach(r => {
-        if (r.year !== prevYear) { html += `<tr class="year-divider"><td colspan="10">${r.year}년</td></tr>`; prevYear = r.year; }
+        if (r.year !== prevYear) { html += `<tr class="year-divider"><td colspan="9">${r.year}년</td></tr>`; prevYear = r.year; }
 
         const isFree = r.isFreeDay;
         const hasBridge = r.slots.some(sl => sl.isBridge && sl.type !== 'in_period');
@@ -2335,6 +2331,20 @@
         </td>`;
           }
 
+          // 직접 입력형 서비스(PS충전 등): 매달 독립적으로 금액을 입력
+          if (sl.type === 'custom') {
+            const opts = buildSubOptions(key, si, cs.svcId || '');
+            return `<td class="sub-cell c">
+          <select class="sub-drop" onchange="onCellSvcChange(${key},${si},this.value)">
+            ${opts}
+          </select>
+          <input type="text" inputmode="numeric" placeholder="금액 입력" value="${cs.customAmount ? Number(cs.customAmount).toLocaleString('ko-KR') : ''}"
+            style="width:100%;margin-top:2px;padding:2px 4px;border:.5px solid var(--border-strong);border-radius:4px;font-size:10px;text-align:right;background:var(--surface);color:var(--text)"
+            oninput="formatNumberInput(this)" onchange="onCellCustomAmountChange(${key},${si},this.value)">
+          <span class="sub-cost">${sl.cost > 0 ? fmtK(sl.cost) + '원' : ''}</span>
+        </td>`;
+          }
+
           // 드롭다운 표시 달: annual_pay / monthly / free (브릿지 힌트 포함 모두)
           const curSvcId = cs.svcId || '';
           const curMode = cs.mode || 'annual';
@@ -2374,7 +2384,6 @@
         html += `<tr class="${rowClass}">
       <td>${monthCell}</td>
       <td>${r.billFee > 0 ? fmtK(r.billFee) : '—'}</td>
-      <td>${r.addonFee > 0 ? fmtK(r.addonFee) : '—'}</td>
       <td class="c">${deviceCell}</td>
       ${renderSlotCell(0)}
       ${renderSlotCell(1)}
@@ -2405,9 +2414,8 @@
         tujuOwnTier: document.getElementById('tujuOwnTier')?.value,
         tujuAddon: document.getElementById('tujuAddon')?.value,
         addonList: JSON.stringify(addonList),
-        installPrincipal: document.getElementById('installPrincipal')?.value,
-        installMonths: document.getElementById('installMonths')?.value,
-        buyDate: document.getElementById('buyDate')?.value,
+        deviceSchedule: serializeDeviceSchedule(),
+        deviceImportMeta: deviceImportMeta ? { importedAt: deviceImportMeta.importedAt.toISOString(), deviceCount: deviceImportMeta.deviceCount, monthCount: deviceImportMeta.monthCount } : null,
       };
     }
 
@@ -2439,10 +2447,9 @@
         try { addonList = JSON.parse(cfg.addonList); } catch (e) { }
         renderAddonList();
       }
-      set('installPrincipal', cfg.installPrincipal);
-      set('installMonths', cfg.installMonths);
-      set('buyDate', cfg.buyDate);
-      updateNextBuyOptions();
+      deviceScheduleMap = deserializeDeviceSchedule(cfg.deviceSchedule);
+      deviceImportMeta = cfg.deviceImportMeta ? { importedAt: new Date(cfg.deviceImportMeta.importedAt), deviceCount: cfg.deviceImportMeta.deviceCount, monthCount: cfg.deviceImportMeta.monthCount } : null;
+      renderDeviceImportStatus();
     }
 
     function saveToJson() {
@@ -2491,13 +2498,61 @@
       reader.readAsText(file);
     }
 
+    // ─── 서버 저장/불러오기 (Netlify Blobs, netlify/functions/planner.js) ───
+    async function serverSave() {
+      const st = document.getElementById('server-sync-status');
+      if (st) st.textContent = '서버에 저장 중...';
+      try {
+        const data = { version: 1, savedAt: new Date().toISOString(), settings: collectSettings(), cellState };
+        const res = await fetch('/.netlify/functions/planner', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'save', data })
+        });
+        const json = await res.json();
+        if (!json.success) throw new Error(json.message || '저장 실패');
+        if (st) { st.textContent = '✓ 서버 저장 완료'; setTimeout(() => { st.textContent = ''; }, 3000); }
+      } catch (e) {
+        if (st) st.textContent = '서버 저장 실패: ' + e.message;
+        alert('서버 저장에 실패했습니다.\n' + e.message);
+      }
+    }
+
+    async function serverLoad() {
+      const st = document.getElementById('server-sync-status');
+      if (st) st.textContent = '서버에서 불러오는 중...';
+      try {
+        const res = await fetch('/.netlify/functions/planner', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'load' })
+        });
+        const json = await res.json();
+        if (!json.success) throw new Error(json.message || '불러오기 실패');
+        if (!json.data) { if (st) st.textContent = '서버에 저장된 데이터가 없습니다.'; return; }
+        const data = json.data;
+        if (!data.settings || !data.cellState) throw new Error('형식 오류');
+        Object.keys(cellState).forEach(k => delete cellState[k]);
+        Object.entries(data.cellState).forEach(([k, v]) => { cellState[parseInt(k)] = v; });
+        applySettings(data.settings);
+        update();
+        const savedAt = data.savedAt ? new Date(data.savedAt).toLocaleString('ko-KR') : '알 수 없음';
+        if (st) { st.textContent = `✓ 서버 불러오기 완료 (저장: ${savedAt})`; setTimeout(() => { st.textContent = ''; }, 4000); }
+      } catch (e) {
+        if (st) st.textContent = '서버 불러오기 실패: ' + e.message;
+        alert('서버에서 불러오지 못했습니다.\n' + e.message);
+      }
+    }
+
     // ─── 셀별 이벤트 핸들러 ───
     function onCellSvcChange(key, si, svcId) {
-      setCellState(key, si, { svcId, mode: getCellState(key, si).mode || 'annual', upgradeKey: null, upgradeToId: '' });
+      setCellState(key, si, { svcId, mode: getCellState(key, si).mode || 'annual', upgradeKey: null, upgradeToId: '', customAmount: '' });
       update();
     }
     function onCellModeChange(key, si, mode) {
       setCellState(key, si, { mode });
+      update();
+    }
+    function onCellCustomAmountChange(key, si, val) {
+      setCellState(key, si, { customAmount: (val || '').replace(/[^0-9]/g, '') });
       update();
     }
 
@@ -2601,7 +2656,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       renderAddonList();
       renderPlanList();
-      updateNextBuyOptions();
+      renderDeviceImportStatus();
       update();
     });
   </script>
