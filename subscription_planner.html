@@ -1113,9 +1113,19 @@
 </head>
 
 <body>
-  <div class="header">
-    <h1>📱 회사 지원금 구독 플래너</h1>
-    <p>설정을 바꾸면 2026~2030년 결제 계획이 자동으로 업데이트됩니다</p>
+  <div class="header" style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+    <div>
+      <h1>📱 회사 지원금 구독 플래너</h1>
+      <p>설정을 바꾸면 2026년 7월~2030년 결제 계획이 자동으로 업데이트됩니다</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span id="server-last-saved" style="font-size:11px;color:var(--text-muted)"></span>
+      <span id="server-dirty-badge" style="display:none;font-size:10px;font-weight:700;color:#b06000;background:var(--amber-bg);border:.5px solid var(--amber-border);border-radius:10px;padding:2px 8px;white-space:nowrap">저장
+        필요</span>
+      <button class="export-btn" onclick="serverSave()" style="background:var(--accent)">☁️ 서버 저장</button>
+      <button class="export-btn" onclick="serverLoad()" style="background:var(--accent)">☁️ 서버 불러오기</button>
+      <span id="server-sync-status" style="font-size:11px;color:var(--text-muted)"></span>
+    </div>
   </div>
   <div class="container">
     <div class="layout">
@@ -1266,10 +1276,7 @@
                 📂 JSON 불러오기
                 <input type="file" accept=".json" onchange="loadFromJson(event)" style="display:none">
               </label>
-              <button class="export-btn" onclick="serverSave()" style="background:var(--accent)">☁️ 서버 저장</button>
-              <button class="export-btn" onclick="serverLoad()" style="background:var(--accent)">☁️ 서버 불러오기</button>
               <span id="save-status" style="font-size:11px;color:var(--text-muted)"></span>
-              <span id="server-sync-status" style="font-size:11px;color:var(--text-muted)"></span>
             </div>
           </div>
 
@@ -1769,6 +1776,16 @@
     // ═══════════════════════════════════
     let feeHistory = []; // [{ from:YYYYMM, baseFee, discountedBaseFee, addonFee }], from 오름차순 정렬 유지
 
+    // ── 연도별 접기/펼치기 ──
+    // 초기값: 올해(현재 연도)만 펼치고 나머지는 접어둔다. 표를 다시 계산하지 않고
+    // 마지막으로 만든 rows(lastRows)를 그대로 재사용해 renderTable만 다시 호출한다.
+    let expandedYears = new Set([new Date().getFullYear()]);
+    let lastRows = null;
+    function toggleYear(year) {
+      if (expandedYears.has(year)) expandedYears.delete(year); else expandedYears.add(year);
+      if (lastRows) renderTable(lastRows);
+    }
+
     // 특정 달(key)에 적용되는 요금 스냅샷: key 이하의 from 중 가장 최근 항목을 찾는다.
     // 해당하는 이력이 아직 없으면(그 달 이전에 한 번도 적용한 적 없으면) 0원 처리한다.
     function getBillingConfigForMonth(key) {
@@ -2213,10 +2230,11 @@
       // 요금제/할인/부가서비스는 "적용 시작월"부터만 반영되므로 달마다 feeHistory에서 스냅샷을 찾아 청구요금을 계산한다.
       refreshFeePreview();
 
-      // ── 3. 전체 날짜 목록 생성 (2026년 1월 ~ 2030년 12월) ──
+      // ── 3. 전체 날짜 목록 생성 (2026년 7월 ~ 2030년 12월) ──
       const allKeys = [];
       for (let y = 2026; y <= 2030; y++) {
-        for (let m = 1; m <= 12; m++) allKeys.push(y * 100 + m);
+        const startM = (y === 2026) ? 7 : 1;
+        for (let m = startM; m <= 12; m++) allKeys.push(y * 100 + m);
       }
 
       // ── 4. 슬롯별 "계산된 상태" 맵 구성 ──
@@ -2337,7 +2355,14 @@
       let html = '', prevYear = null;
 
       rows.forEach(r => {
-        if (r.year !== prevYear) { html += `<tr class="year-divider"><td colspan="9">${r.year}년</td></tr>`; prevYear = r.year; }
+        if (r.year !== prevYear) {
+          const isOpen = expandedYears.has(r.year);
+          html += `<tr class="year-divider" onclick="toggleYear(${r.year})" style="cursor:pointer">
+            <td colspan="9">${isOpen ? '▾' : '▸'} ${r.year}년</td>
+          </tr>`;
+          prevYear = r.year;
+        }
+        if (!expandedYears.has(r.year)) return;
 
         const isFree = r.isFreeDay;
         const hasBridge = r.slots.some(sl => sl.isBridge && sl.type !== 'in_period');
@@ -2571,17 +2596,56 @@
     }
 
     // ─── 서버 저장/불러오기 (Netlify Blobs, netlify/functions/planner.js) ───
+    // serverBaseline: 마지막으로 서버와 실제로 일치했던 시점의 스냅샷(저장 직후 또는 불러오기 직후).
+    // 현재 상태를 이 스냅샷과 비교해 달라지면 '저장 필요' 뱃지를 띄운다.
+    let serverBaseline = null; // { settings, cellState }
+    let lastServerSavedAt = null; // Date | null
+
+    function snapshotString(settings, cs) {
+      return JSON.stringify({ settings, cellState: cs });
+    }
+
+    function refreshServerSyncUI() {
+      const lastEl = document.getElementById('server-last-saved');
+      if (lastEl) lastEl.textContent = lastServerSavedAt ? `최종 저장: ${lastServerSavedAt.toLocaleString('ko-KR')}` : '서버에 저장된 데이터 없음';
+      const badge = document.getElementById('server-dirty-badge');
+      if (!badge) return;
+      const dirty = !serverBaseline || snapshotString(collectSettings(), cellState) !== snapshotString(serverBaseline.settings, serverBaseline.cellState);
+      badge.style.display = dirty ? 'inline-block' : 'none';
+    }
+
+    // 페이지를 열자마자(불러오기 버튼을 누르지 않아도) 서버에 저장된 데이터의 최종 저장 시각과
+    // 현재 화면 상태가 다른지 조용히 확인한다. 실패해도 사용자에게 알리지 않는다(배경 확인용).
+    async function checkServerSyncStatus() {
+      try {
+        const res = await fetch('/.netlify/functions/planner', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'load' })
+        });
+        const json = await res.json();
+        if (!json.success || !json.data || !json.data.settings || !json.data.cellState) return;
+        serverBaseline = { settings: json.data.settings, cellState: json.data.cellState };
+        lastServerSavedAt = json.data.savedAt ? new Date(json.data.savedAt) : null;
+        refreshServerSyncUI();
+      } catch (e) { /* 배경 확인 실패는 조용히 무시 */ }
+    }
+
     async function serverSave() {
       const st = document.getElementById('server-sync-status');
       if (st) st.textContent = '서버에 저장 중...';
       try {
-        const data = { version: 1, savedAt: new Date().toISOString(), settings: collectSettings(), cellState };
+        const settings = collectSettings();
+        const savedAt = new Date().toISOString();
+        const data = { version: 1, savedAt, settings, cellState };
         const res = await fetch('/.netlify/functions/planner', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'save', data })
         });
         const json = await res.json();
         if (!json.success) throw new Error(json.message || '저장 실패');
+        serverBaseline = { settings, cellState: JSON.parse(JSON.stringify(cellState)) };
+        lastServerSavedAt = new Date(savedAt);
+        refreshServerSyncUI();
         if (st) { st.textContent = '✓ 서버 저장 완료'; setTimeout(() => { st.textContent = ''; }, 3000); }
       } catch (e) {
         if (st) st.textContent = '서버 저장 실패: ' + e.message;
@@ -2606,6 +2670,9 @@
         Object.entries(data.cellState).forEach(([k, v]) => { cellState[parseInt(k)] = v; });
         applySettings(data.settings);
         update();
+        serverBaseline = { settings: data.settings, cellState: JSON.parse(JSON.stringify(cellState)) };
+        lastServerSavedAt = data.savedAt ? new Date(data.savedAt) : null;
+        refreshServerSyncUI();
         const savedAt = data.savedAt ? new Date(data.savedAt).toLocaleString('ko-KR') : '알 수 없음';
         if (st) { st.textContent = `✓ 서버 불러오기 완료 (저장: ${savedAt})`; setTimeout(() => { st.textContent = ''; }, 4000); }
       } catch (e) {
@@ -2710,8 +2777,10 @@
     function update() {
       try {
         const rows = buildTimeline();
+        lastRows = rows;
         renderTable(rows);
         clearDirty();
+        refreshServerSyncUI();
       } catch (e) { console.error('업데이트 오류:', e); }
     }
 
@@ -2731,6 +2800,7 @@
       renderDeviceImportStatus();
       renderFeeHistoryList();
       update();
+      checkServerSyncStatus();
     });
   </script>
 </body>
