@@ -1,4 +1,14 @@
 // Netlify Function — 구독 플래너 데이터 저장/불러오기 (Netlify Blobs)
+
+// Netlify Blobs — siteID와 token을 환경변수에서 읽어서 명시적으로 설정
+async function getBlobStore() {
+  const { getStore } = await import('@netlify/blobs');
+  const siteID = process.env.NETLIFY_SITE_ID;
+  const token  = process.env.NETLIFY_TOKEN;
+  if (!siteID || !token) throw new Error('NETLIFY_SITE_ID 또는 NETLIFY_TOKEN 환경변수가 없습니다.');
+  return getStore({ name: 'skt-planner-data', siteID, token });
+}
+
 exports.handler = async (event) => {
   const headers = {
     'Access-Control-Allow-Origin':  '*',
@@ -10,8 +20,7 @@ exports.handler = async (event) => {
   try {
     const body = JSON.parse(event.body || '{}');
     const { action, data: saveData } = body;
-    const { getStore } = await import('@netlify/blobs');
-    const store = getStore('skt-planner-data');
+    const store = await getBlobStore();
 
     // ── 데이터 저장 ────────────────────────────
     if (action === 'save') {

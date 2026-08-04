@@ -1142,7 +1142,14 @@
           </div>
         </div>
 
-        <button id="apply-btn" class="apply-btn" onclick="update()">▶ 오른쪽 표에 반영</button>
+        <div class="select-row" style="margin-bottom:6px">
+          <label style="font-size:11px;color:var(--text-sub);white-space:nowrap">요금제 적용 시작월</label>
+          <input type="month" id="applyFromMonth" class="sel" value="2026-01" min="2026-01" max="2030-12">
+        </div>
+        <div style="font-size:10px;color:var(--text-muted);margin:-3px 0 8px;line-height:1.5">휴대전화 요금(기본요금·할인·부가서비스)
+          변경사항은 선택한 월부터 그 이후 모든 달에 반영됩니다. 이전 달의 요금은 그대로 유지됩니다.</div>
+        <div id="fee-history-list" style="margin-bottom:8px"></div>
+        <button id="apply-btn" class="apply-btn" onclick="applyFeeChange()">▶ 오른쪽 표에 반영</button>
         <div id="apply-hint" class="apply-hint" style="display:none">입력값이 변경되었습니다 — 버튼을 눌러 표에 반영하세요</div>
 
         <div class="card" style="margin-bottom:10px">
@@ -1757,6 +1764,62 @@
     }
 
     // ═══════════════════════════════════
+    // 휴대전화 요금 적용 이력 — 요금제/할인/부가서비스가 바뀐 시점(YYYYMM)부터
+    // 그 이후 모든 달에 반영되도록, 값 자체가 아니라 "시점별 스냅샷"을 기록해서 관리한다.
+    // ═══════════════════════════════════
+    let feeHistory = []; // [{ from:YYYYMM, baseFee, discountedBaseFee, addonFee }], from 오름차순 정렬 유지
+
+    // 특정 달(key)에 적용되는 요금 스냅샷: key 이하의 from 중 가장 최근 항목을 찾는다.
+    // 해당하는 이력이 아직 없으면(그 달 이전에 한 번도 적용한 적 없으면) 0원 처리한다.
+    function getBillingConfigForMonth(key) {
+      let applicable = null;
+      for (const entry of feeHistory) {
+        if (entry.from <= key && (!applicable || entry.from > applicable.from)) applicable = entry;
+      }
+      return applicable || { baseFee: 0, discountedBaseFee: 0, addonFee: 0 };
+    }
+
+    function monthInputToKey(val) {
+      const [y, m] = (val || '').split('-').map(Number);
+      if (!y || !m) return null;
+      return y * 100 + m;
+    }
+    function keyToMonthLabel(key) {
+      return `${Math.floor(key / 100)}년 ${key % 100}월`;
+    }
+
+    function applyFeeChange() {
+      const fromKey = monthInputToKey(document.getElementById('applyFromMonth')?.value) || 202601;
+      const baseFee = numVal('baseFee');
+      const discountedBaseFee = computeDiscountedFee(baseFee);
+      const addonFee = getTotalAddonFee();
+
+      feeHistory = feeHistory.filter(e => e.from !== fromKey);
+      feeHistory.push({ from: fromKey, baseFee, discountedBaseFee, addonFee });
+      feeHistory.sort((a, b) => a.from - b.from);
+
+      renderFeeHistoryList();
+      update();
+    }
+
+    function removeFeeHistoryEntry(fromKey) {
+      feeHistory = feeHistory.filter(e => e.from !== fromKey);
+      renderFeeHistoryList();
+      update();
+    }
+
+    function renderFeeHistoryList() {
+      const el = document.getElementById('fee-history-list');
+      if (!el) return;
+      if (!feeHistory.length) { el.innerHTML = ''; return; }
+      el.innerHTML = feeHistory.map(e => `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:10.5px;color:var(--text-sub);background:var(--surface2);border-radius:4px;padding:4px 7px;margin-bottom:3px">
+          <span>${keyToMonthLabel(e.from)}부터 · 청구 ${fmtK(e.discountedBaseFee + e.addonFee)}원 (요금 ${fmtK(e.discountedBaseFee)}+부가 ${fmtK(e.addonFee)})</span>
+          <button onclick="removeFeeHistoryEntry(${e.from})" style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:12px;line-height:1;padding:0 2px">✕</button>
+        </div>`).join('');
+    }
+
+    // ═══════════════════════════════════
     // T 우주 결합 상품 (SKT 요금제 상세 자료 기준)
     // ═══════════════════════════════════
     // 추가 OTT 선택지 등급별 가격표 ("선택 가능한 OTT 서비스" 표)
@@ -2147,7 +2210,7 @@
       // ── 2. 청구요금 (할인 후 기본요금 + 부가서비스) ──
       // T우주 결합상품(OTT) 이용금액은 통신비가 아니라 별도 신용카드로 결제되므로 청구요금에 포함하지 않는다.
       // (T우주 계산기 자체는 참고용으로 계속 동작하며, tujuFee는 이 합계 계산에 관여하지 않는다.)
-      const billFee = s.discountedBaseFee + s.addonFee;
+      // 요금제/할인/부가서비스는 "적용 시작월"부터만 반영되므로 달마다 feeHistory에서 스냅샷을 찾아 청구요금을 계산한다.
       refreshFeePreview();
 
       // ── 3. 전체 날짜 목록 생성 (2026년 1월 ~ 2030년 12월) ──
@@ -2250,6 +2313,8 @@
 
         const slots = slotCalc[key];
         const slotCost = slots.reduce((s, sl) => s + sl.cost, 0);
+        const feeCfg = getBillingConfigForMonth(key);
+        const billFee = feeCfg.discountedBaseFee + feeCfg.addonFee;
         const total = billFee + installAmount + slotCost;
         const remainder = s.limit - total;
 
@@ -2257,7 +2322,7 @@
           key, year: y, month: m,
           installAmount, installLabel, isBuyMonth, isFreeDay, isOverlap,
           slots, slotCost,
-          billFee, addonFee: s.addonFee,
+          billFee, addonFee: feeCfg.addonFee,
           total, remainder
         });
       }
@@ -2338,9 +2403,11 @@
           <select class="sub-drop" onchange="onCellSvcChange(${key},${si},this.value)">
             ${opts}
           </select>
+          <div style="margin-top:2px">
           <input type="text" inputmode="numeric" placeholder="금액 입력" value="${cs.customAmount ? Number(cs.customAmount).toLocaleString('ko-KR') : ''}"
-            style="width:100%;margin-top:2px;padding:2px 4px;border:.5px solid var(--border-strong);border-radius:4px;font-size:10px;text-align:right;background:var(--surface);color:var(--text)"
+            style="width:100%;padding:2px 4px;border:.5px solid var(--border-strong);border-radius:4px;font-size:10px;text-align:right;background:var(--surface);color:var(--text)"
             oninput="formatNumberInput(this)" onchange="onCellCustomAmountChange(${key},${si},this.value)">
+          </div>
           <span class="sub-cost">${sl.cost > 0 ? fmtK(sl.cost) + '원' : ''}</span>
         </td>`;
           }
@@ -2416,6 +2483,8 @@
         addonList: JSON.stringify(addonList),
         deviceSchedule: serializeDeviceSchedule(),
         deviceImportMeta: deviceImportMeta ? { importedAt: deviceImportMeta.importedAt.toISOString(), deviceCount: deviceImportMeta.deviceCount, monthCount: deviceImportMeta.monthCount } : null,
+        applyFromMonth: document.getElementById('applyFromMonth')?.value,
+        feeHistory: feeHistory,
       };
     }
 
@@ -2450,6 +2519,9 @@
       deviceScheduleMap = deserializeDeviceSchedule(cfg.deviceSchedule);
       deviceImportMeta = cfg.deviceImportMeta ? { importedAt: new Date(cfg.deviceImportMeta.importedAt), deviceCount: cfg.deviceImportMeta.deviceCount, monthCount: cfg.deviceImportMeta.monthCount } : null;
       renderDeviceImportStatus();
+      set('applyFromMonth', cfg.applyFromMonth);
+      feeHistory = Array.isArray(cfg.feeHistory) ? cfg.feeHistory : [];
+      renderFeeHistoryList();
     }
 
     function saveToJson() {
@@ -2657,6 +2729,7 @@
       renderAddonList();
       renderPlanList();
       renderDeviceImportStatus();
+      renderFeeHistoryList();
       update();
     });
   </script>
